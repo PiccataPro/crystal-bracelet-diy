@@ -1,5 +1,7 @@
 # 水晶手串 DIY 配置器 · 微信小程序 Demo
 
+A zero-dependency WeChat Mini Program demo: drag beads onto a bracelet ring, get live pricing and a fit verdict. [English summary ↓](#english-summary)
+
 一个零依赖的微信小程序演示项目：客人选珠子 → 拖进手环 → 实时看到报价与松紧判断 → 生成订单。
 
 算法的核心不是「颗数 = 腕围 ÷ 珠径」这种把圆弧当直线的估算，而是**闭环方程数值求解**：
@@ -48,9 +50,9 @@ sitemap.json                     站点索引配置
 
 `utils/bracelet-core.js` 完全与 UI 解耦，纯 CommonJS，可脱离小程序在 Node 里单测。
 
-- **`solveLoop(ds)`**：给定每颗珠径，数值求解珠心圆半径 `Rc`，使整环角度闭合。返回内径 `ri`、内缘周长、每颗圆心角。
+- **`solveLoop(ds)`**：给定每颗珠径，数值求解珠心圆半径 `Rc`，使整环角度闭合。返回内缘半径 `ri`、内缘周长、每颗圆心角。
 - **等径退化**：`R = d / (2·sin(π/n))`，`innerDiameter = 2R − d`。
-- **`geom` / `fitVerdict`**：内缘周长 vs 掌围（`PALM_RATIO` 换算），给出松紧档位与建议。
+- **`geom(d, n)` / `stretchOf(innerPerim, wrist)` / `fitVerdict(stretch)`**：等径闭式几何；拉伸率 = 掌围 / 内周长 − 1（`PALM_RATIO` 把腕围换算成掌围），并对「过松」设了下界，避免加到几百颗仍报绿。
 - **`ciede2000` / `gradientPath` / `gradientEven`**：CIEDE2000 色差 + 瓶颈最短路求最平滑珠材链，再按参数轴切连续色带，实现「零修补」渐变。
 - **`layout` / `hitTest` / `dropIntent` / `applyDrop`**：坐标与命中判定（含拖动插入时的环绷开动画量 `grown`）。
 - **`priceOf`**：按颗计价阶梯 + 绳材工费。
@@ -63,6 +65,52 @@ sitemap.json                     站点索引配置
 - Canvas 在真机高 DPR 下的清晰度、拖拽跟手程度需真机确认，模拟器手感有差异。
 - 珠材库、珠径档位、价格为演示用常量，上线应从后台/云配置下发。
 
+## English Summary
+
+A WeChat Mini Program demo for designing crystal bracelets. Customers pick beads, drag them onto a ring, reorder or insert between beads by dragging, and see a live price plus a wearability verdict. Orders are frozen into local `storage`.
+
+**Why the geometry matters.** The naive formula `count = wrist ÷ beadDiameter` treats an arc as a straight line and over-prices — for a 165 mm wrist with 10 mm beads it yields 16 beads, an inner diameter of ~41 mm that a 52.5 mm palm cannot pass through. This project instead solves the closed loop numerically: beads are tangent along a circle, each bead's central angle depends on the radii of its two neighbours, and the angles must sum to exactly 2π. It stays correct when bead diameters are mixed, and degenerates exactly to `R = d / (2·sin(π/n))`, `innerDiameter = 2R − d` for the uniform case.
+
+**Features**
+
+- Bead palette of material × diameter SKUs; drag into the ring, swap by dragging one bead onto another, insert between two beads (the ring visibly stretches open).
+- Live pricing (per-bead ladder + cord fee) and fit verdict based on **inner circumference** vs palm circumference — not a bead count.
+- One-tap symmetry and gradient: reorder only, never add or drop a bead; refuses with a clear message when symmetry is impossible.
+- Gradient uses CIEDE2000 colour distance plus a bottleneck-shortest-path bead chain, then slices continuous colour bands — zero post-hoc patching.
+- Orders page persists a snapshot to local `storage`; `push()` is a deliberate stub returning `ok:false` rather than faking success.
+
+**Quick start**
+
+1. Install WeChat DevTools (Windows/macOS).
+2. Import this repository root — the folder containing `project.config.json`.
+3. Press `Ctrl+B` / `Cmd+B` to compile; the simulator is immediately interactive.
+
+`appid` is `touristappid` (guest mode) so no account permission is needed. Guest mode cannot produce a real-device preview QR code — that is a WeChat-side restriction. Replace `appid` with your own Mini Program AppID if you want preview or upload.
+
+**Layout**
+
+```
+app.js / app.json / app.wxss     entry and global styles
+pages/index                      home (preset entry points)
+pages/custom                     configurator: palette, drag, pricing, order
+pages/orders                     order list (owner side, local table)
+utils/bracelet-core.js           geometry, colour, pricing — pure CommonJS, zero deps
+utils/order-store.js             order snapshot, storage, push stub
+```
+
+`utils/bracelet-core.js` has no Mini Program dependency at all and can be unit-tested under plain Node. The UI layer deliberately contains **zero algorithm**; the bead sequence lives on the `Page` instance rather than in `data` to avoid per-frame `setData` serialisation during drags.
+
+**Known limitations**
+
+- No backend. `PUSH_ENDPOINT` in `utils/order-store.js` is empty, so `push()` returns `ok:false`; orders stay local.
+- Canvas sharpness on high-DPR devices and real-device drag feel were never verified on hardware.
+- Bead library, size tiers and prices are demo constants; production should serve them from a backend or cloud config.
+
+**License** — [MIT](LICENSE) © 2026 PiccataPro
+
+---
+
 ## 许可
+
 
 [MIT](LICENSE) © 2026 PiccataPro
