@@ -1,0 +1,28 @@
+<!-- pages/index/index.wxml —— 首页（阶段一占位） -->
+<view class="wrap">
+
+  <view class="hero">
+    <view class="hero-t">水晶手串定制</view>
+    <view class="hero-s">在线挑珠 · 定尺寸 · 实时预览 · 到店取货</view>
+    <view class="btn primary" bindtap="onGoCustom">开始定制</view>
+  </view>
+
+  <view class="card">
+    <view class="card-title">热门搭配</view>
+    <view wx:for="{{presets}}" wx:key="key"
+          class="preset" bindtap="onGoCustom">
+      <view class="preset-n">{{item.name}}</view>
+      <view class="hint">{{item.desc}}</view>
+    </view>
+    <view class="hint">阶段一为占位数据，正式版从云数据库读。</view>
+  </view>
+
+  <view class="card">
+    <view class="card-title">关于本阶段</view>
+    <view class="hint">
+      当前为**本地验证阶段**：算法已跑通，未接云开发、未做支付、未接订单。
+      目的是验证「混搭珠径 +闭环求解 + 拖动互调」在真机上的手感。
+    </view>
+  </view>
+
+</view>

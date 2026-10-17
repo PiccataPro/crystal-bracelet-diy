@@ -1,0 +1,49 @@
+<!-- pages/orders/orders.wxml —— 店主侧：本机订单列表
+     ⚠️ 这一页是「订单推送」的落点。
+        当前推送通道未接入（见 utils/order-store.js 的 PUSH_ENDPOINT），
+        订单先落在本机 storage，故店主在本机就能看到。
+        接入后端后，只需把 orders.js 的 reload() 改成从接口拉取，页面结构不动。
+     ⚠️ WXML 不能调函数：所有派生文案（几颗 / 按径 / 腕围）都在 JS 里预生成。 -->
+
+<view class="page">
+
+  <view class="head">
+    <view class="head-l">
+      <view class="head-t">本机订单</view>
+      <view class="head-s">{{count}} 单 · 合计 ¥{{amount}}</view>
+    </view>
+    <view class="clear {{count ? '' : 'clear-off'}}" bindtap="onClear">清空</view>
+  </view>
+
+  <view wx:if="{{!count}}" class="empty">
+    还没有订单。客人在定制页点「生成订单」后，会出现在这里。
+  </view>
+
+  <view wx:for="{{list}}" wx:key="no" class="od">
+    <view class="od-top">
+      <text class="od-no">{{item.no}}</text>
+      <text class="od-amt">¥{{item.total}}</text>
+    </view>
+
+    <view class="od-line">{{item.dimLine}}</view>
+    <view class="od-line">{{item.fitLine}}</view>
+    <view class="od-line od-dim">{{item.summary}}</view>
+
+    <view class="od-foot">
+      <text class="od-st {{item.status}}">{{item.statusText}}</text>
+      <text class="od-time">{{item.time}}</text>
+      <text class="od-del" bindtap="onRemove" data-no="{{item.no}}">删除</text>
+    </view>
+
+    <!-- 珠子实物清单：店主照单备料用，颜色直接取 core 的 hex -->
+    <view class="od-beads">
+      <view wx:for="{{item.beads}}" wx:for-item="b" wx:key="i"
+            class="od-bead" style="background:{{b.hex}};"></view>
+    </view>
+  </view>
+
+  <view class="tips">
+    订单存在本机（storage 键 MB_ORDERS_V1）。接入后端后本页改为从接口读取，即可跨设备接收。
+  </view>
+
+</view>

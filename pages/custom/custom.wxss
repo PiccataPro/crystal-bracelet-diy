@@ -1,0 +1,491 @@
+/* pages/custom/custom.wxss —— 定制核心页样式
+ * ⚠️ 小程序用 rpx（750rpx = 屏宽），不是 px。
+ *    但 canvas 的 width/height 属性在 JS 里给的是**px**（逻辑尺寸），
+ *    这是 Canvas 2D 接口的规定，与页面 rpx 体系是两套，别混。
+ *    下面 .dot 用 px 是因为它要表达「真实珠径毫米比例」，与画布里的珠子视觉一致。
+ */
+
+.page {
+  padding-bottom: 40rpx;
+}
+
+/* 卡片头部：标题 + 右侧标签 */
+.card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 16rpx;
+}
+
+.card-title {
+  font-size: 30rpx;
+  font-weight: 600;
+}
+
+.tag {
+  font-size: 22rpx;
+  color: #999;
+}
+
+/* ========== 垃圾桶（拖入删除） ========== */
+/* 半隐形：常态 opacity .45，被拖到上方时才「亮起」。
+   ⚠️ 用 inline-flex 而不是 flex：.card 是**块级**容器（不是 flex），
+      flex 会让它撑满整行，横向盖到右侧画布区；
+      inline-flex 按内容收窄，正好落在红框那个窄条位置。
+   ⚠️ 位置固定在卡片左上角、画布之外：见 wxml 里的说明，重叠会导致误判。 */
+.trash {
+  display: inline-flex;
+  align-items: center;
+  padding: 8rpx 20rpx;
+  margin-bottom: 12rpx;
+  border: 2rpx dashed rgba(0, 0, 0, .16);
+  border-radius: 999rpx;
+  opacity: .45;
+  transition: opacity .15s, background .15s, border-color .15s;
+}
+
+.trash-on {
+  opacity: 1;
+  border-style: solid;
+  border-color: #b3261e;
+  background: #fdecec;
+}
+
+.trash-ico {
+  width: 34rpx;
+  height: 34rpx;
+  flex-shrink: 0;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  /* 灰版图标（stroke #8A8F98）。⚠️ data URI 里是 SVG，靠 background-size 缩放，不用 image 标签 */
+  background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjOEE4Rjk4IiBzdHJva2Utd2lkdGg9IjEuOSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cGF0aCBkPSJNMy41IDYuNWgxNyIvPjxwYXRoIGQ9Ik05LjUgNi41VjQuMmg1djIuMyIvPjxwYXRoIGQ9Ik02LjQgNi41bDEgMTMuM2g5LjJsMS0xMy4zIi8+PHBhdGggZD0iTTEwLjQgMTAuNHY1LjZNMTMuNiAxMC40djUuNiIvPjwvc3ZnPg==");
+}
+
+/* 激活态换成红版图标 */
+.trash-on .trash-ico {
+  background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjQjMyNjFFIiBzdHJva2Utd2lkdGg9IjEuOSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cGF0aCBkPSJNMy41IDYuNWgxNyIvPjxwYXRoIGQ9Ik05LjUgNi41VjQuMmg1djIuMyIvPjxwYXRoIGQ9Ik02LjQgNi41bDEgMTMuM2g5LjJsMS0xMy4zIi8+PHBhdGggZD0iTTEwLjQgMTAuNHY1LjZNMTMuNiAxMC40djUuNiIvPjwvc3ZnPg==");
+}
+
+.trash-txt {
+  font-size: 21rpx;
+  color: #777;
+  margin-left: 10rpx;
+}
+
+.trash-on .trash-txt {
+  color: #b3261e;
+  font-weight: 600;
+}
+
+/* ========== 珠径筛选条 ========== */
+/* 「全部」+ 四档规格横排。用胶囊形 chip（与下方 seg 区分：
+   seg 是「选一个生效的设置」，chip 是「过滤列表」，视觉上不该长得一样）。 */
+.dfilter {
+  display: flex;
+  flex-wrap: wrap;
+  margin-bottom: 12rpx;
+}
+
+.df {
+  font-size: 22rpx;
+  color: #555;
+  background: #fff;
+  border: 1rpx solid rgba(0, 0, 0, .14);
+  border-radius: 999rpx;
+  padding: 6rpx 18rpx;
+  margin-right: 8rpx;
+}
+
+.df-on {
+  background: #185FA5;
+  border-color: #185FA5;
+  color: #fff;
+}
+
+/* ========== 配珠台：珠材库竖列 + 预览画布 ========== */
+/* 宽度账（卡片可用宽 = 750 - 2×20(margin) - 2×24(padding) = 662rpx）：
+   珠材库 144 + 间距 12 + 画布 506 = 662，刚好铺满不溢出。 */
+.preview-row {
+  display: flex;
+  align-items: flex-start;
+}
+
+/* 左：珠材库竖列。高度与画布齐平，内部竖向滚动（12 项总高超过画布） */
+.lib-rail {
+  width: 144rpx;
+  height: 506rpx;
+  flex-shrink: 0;
+  margin-right: 12rpx;
+}
+
+/* 右：预览画布 */
+.stage {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-sizing: border-box;
+  border: 2rpx dashed transparent;
+  border-radius: 12rpx;
+}
+
+/* 拖到画布上方时高亮，提示「松手即加入」 */
+.stage-over {
+  border-color: #185FA5;
+  background: #f2f8ff;
+}
+
+/* ⚠️ 画布尺寸必须用 rpx，不能写死 px。
+ * 原型里是 520px（浏览器 px 是绝对单位），直接搬过来会**在所有手机上溢出**——
+ * 卡片内边距扣完后 375 宽的机型只剩约 331px 可用，520px 远超。
+ * 506rpx 是配珠台里「662 - 144(珠材库) - 12(间距)」的结果，横向铺满不溢出；
+ * 画布内手环的缩放由 core.fitScale 按实际 cvSize 计算，会自动适配这个新尺寸。
+ * 注：JS 里 initCanvas 拿到的是这个 rpx 换算后的**逻辑 px**，两者不冲突。 */
+.cv {
+  width: 506rpx;
+  height: 506rpx;
+}
+
+/* 判定条 + 建议标签：同一行左右排布 */
+.verdict-row {
+  display: flex;
+  align-items: center;
+  margin-top: 14rpx;
+}
+
+/* 覆盖 app.wxss 里 .verdict 的上边距（已由 .verdict-row 承担） */
+.verdict-row .verdict {
+  flex: 1;
+  margin-top: 0;
+}
+
+/* 建议栏：主建议 + 副建议上下排，整体贴右。
+   主建议改颗数、副建议守住颗数换珠径，两条路并列给顾客自己选。 */
+.advice-col {
+  flex-shrink: 0;
+  margin-left: 12rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+/* 副建议文案：弱化处理，不跟主建议抢视线 */
+.advice-alt {
+  margin-top: 6rpx;
+  font-size: 21rpx;
+  color: #8a8a86;
+  line-height: 1.4;
+}
+
+/* 建议标签：颜色跟随判定等级，与左侧判定条同色系，一眼能对上 */
+.advice {
+  flex-shrink: 0;
+  font-size: 23rpx;
+  font-weight: 600;
+  border-radius: 10rpx;
+  padding: 14rpx 18rpx;
+  line-height: 1.5;
+}
+
+.advice-ok {
+  background: #d6efdf;
+  color: #1e7b34;
+}
+
+.advice-warn {
+  background: #ffe9cc;
+  color: #a86300;
+}
+
+.advice-bad {
+  background: #fbdad7;
+  color: #b3261e;
+}
+
+/* ========== 排列顺序条 ========== */
+.seq {
+  width: 100%;
+  white-space: nowrap;
+}
+
+.seq-inner {
+  display: flex;
+  align-items: flex-end;
+  padding: 12rpx 0;
+  min-height: 120rpx;
+}
+
+.bead {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-right: 14rpx;
+  padding: 8rpx 6rpx;
+  border-radius: 8rpx;
+  border: 2rpx solid transparent;
+}
+
+.bead-sel {
+  border-color: #185FA5;
+  background: #eaf2fb;
+}
+
+/* dot 的 width/height 由 WXML 内联 style 给 px（表达真实珠径比例） */
+.dot {
+  border-radius: 50%;
+  box-shadow: inset -1px -2px 4rpx rgba(0, 0, 0, .18);
+}
+
+.bead-n {
+  font-size: 19rpx;
+  color: #999;
+  margin-top: 4rpx;
+}
+
+.hint-empty {
+  font-size: 24rpx;
+  color: #aaa;
+  padding: 30rpx 0;
+}
+
+/* ========== 按钮行 ========== */
+.btn-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 16rpx;
+}
+
+/* 紧贴上一行（随机成品按钮）：不再另起标题行，内容整体上提 */
+.btn-row.tight {
+  margin-top: 6rpx;
+}
+
+/* ========== 色带分段 ========== */
+/* ⚠️ 这段的上下留白刻意收紧（12/12）：原先 20/18 叠加一行 band-label 标题，
+   会把「换一条成品 + 色带」整块压到卡片很下方。 */
+.band-wrap {
+  margin-top: 12rpx;
+  padding-top: 12rpx;
+  border-top: 1rpx solid #f0f0f0;
+}
+
+.bands {
+  display: flex;
+  align-items: flex-end;
+}
+
+.band {
+  height: 32rpx;
+  border-radius: 4rpx;
+  margin-right: 4rpx;
+}
+
+/* ========== 尺寸区 ========== */
+.row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20rpx;
+}
+
+.label {
+  font-size: 26rpx;
+  color: #555;
+  width: 140rpx;
+  flex-shrink: 0;
+}
+
+.slider {
+  flex: 1;
+  margin: 0 16rpx;
+}
+
+.val {
+  font-size: 26rpx;
+  font-weight: 600;
+  width: 100rpx;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* 分段选择器 */
+.seg {
+  display: flex;
+  border: 1rpx solid rgba(0, 0, 0, .12);
+  border-radius: 10rpx;
+  overflow: hidden;
+}
+
+.seg-item {
+  font-size: 25rpx;
+  padding: 12rpx 24rpx;
+  background: #fff;
+  border-right: 1rpx solid rgba(0, 0, 0, .1);
+}
+
+.seg-item:last-child {
+  border-right: none;
+}
+
+.seg-item.on {
+  background: #185FA5;
+  color: #fff;
+}
+
+/* 珠径只读展示已移除：直径现在并入珠材库每一项的介绍里 */
+
+/* ========== 报价 + 下单 ========== */
+.quote-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.quote {
+  font-size: 48rpx;
+  font-weight: 700;
+  color: #b3261e;
+  line-height: 1.3;
+}
+
+.order-btn {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #fff;
+  background: #185FA5;
+  border-radius: 12rpx;
+  padding: 20rpx 36rpx;
+  line-height: 1.2;
+}
+
+.order-btn:active {
+  background: #12497f;
+}
+
+/* 颗数不足（<3，无法成环）时的置灰态 */
+.order-btn-off {
+  background: #c8ccd2;
+  color: #f2f2f2;
+}
+
+.order-ok {
+  font-size: 24rpx;
+  color: #1e7b34;
+  background: #e8f5ec;
+  border-radius: 10rpx;
+  padding: 12rpx 16rpx;
+  margin-top: 14rpx;
+  line-height: 1.5;
+}
+
+/* ========== 珠材库竖列（配珠台左侧） ========== */
+.lib-item {
+  padding: 12rpx 10rpx;
+  margin-bottom: 10rpx;
+  border: 1rpx solid #eee;
+  border-radius: 12rpx;
+}
+
+.lib-item:active {
+  background: #f0f5fa;
+}
+
+/* 展开态：蓝框 + 浅蓝底 */
+.lib-on {
+  border-color: #185FA5;
+  background: #eaf2fb;
+}
+
+.lib-row {
+  display: flex;
+  align-items: center;
+}
+
+.lib-dot {
+  width: 34rpx;
+  height: 34rpx;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: inset -2rpx -3rpx 6rpx rgba(0, 0, 0, .18);
+}
+
+/* 名字 + 直径。珠材库只有 144rpx 宽，两行竖排比横排更省位 */
+.lib-meta {
+  display: flex;
+  flex-direction: column;
+  margin-left: 8rpx;
+  min-width: 0;
+}
+
+.lib-name {
+  font-size: 23rpx;
+  color: #333;
+}
+
+/* 「全部」筛选下才显示：不显示就分不清同材质的四条 */
+.lib-sub {
+  font-size: 19rpx;
+  color: #999;
+  line-height: 1.4;
+}
+
+/* ---- 展开区：介绍 + 价格 + 快捷加一颗 ---- */
+.lib-detail {
+  margin-top: 10rpx;
+  padding-top: 10rpx;
+  border-top: 1rpx dashed rgba(0, 0, 0, .12);
+}
+
+.lib-price {
+  display: block;
+  font-size: 22rpx;
+  font-weight: 600;
+  color: #b3261e;
+}
+
+.lib-intro {
+  display: block;
+  font-size: 20rpx;
+  color: #666;
+  line-height: 1.5;
+  margin-top: 6rpx;
+}
+
+.lib-btn {
+  margin-top: 10rpx;
+  padding: 8rpx 0;
+  font-size: 21rpx;
+  color: #fff;
+  text-align: center;
+  background: #185FA5;
+  border-radius: 8rpx;
+}
+
+.lib-tip {
+  display: block;
+  font-size: 19rpx;
+  color: #aaa;
+  line-height: 1.4;
+  margin-top: 6rpx;
+}
+
+/* 跟手浮层：按住珠材库条目拖动时，贴在手指上的那颗珠子。
+   尺寸/颜色/位置全部由 JS 内联给出（客户端的 clientX/Y 是 px，必须配套 px）。
+   fixed + translate3d 走合成层；pointer-events:none 保证不吞掉底层手势。 */
+.drag-ghost {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 9999;
+  pointer-events: none;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2rpx rgba(255, 255, 255, .9) inset,
+              0 8rpx 20rpx rgba(0, 0, 0, .32);
+  will-change: transform;
+}
+
+.b {
+  font-weight: 600;
+  color: #185FA5;
+}

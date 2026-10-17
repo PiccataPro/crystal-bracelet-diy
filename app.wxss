@@ -1,0 +1,70 @@
+/* app.wxss —— 全局样式。
+ * 注意：小程序尺寸单位是 rpx（750rpx = 屏幕宽度），不是 px。
+ * 换算：1rpx = 屏宽/750。常见 28rpx ≈ 14px（按 iPhone 375 宽折算）。
+ */
+
+page {
+  background: #f5f6f8;
+  font-size: 28rpx;
+  color: #1a1a1a;
+  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", sans-serif;
+}
+
+.card {
+  background: #fff;
+  border-radius: 16rpx;
+  padding: 24rpx;
+  margin: 20rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, .05);
+}
+
+.card-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  margin-bottom: 16rpx;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+}
+
+.hint {
+  font-size: 24rpx;
+  color: #888;
+  line-height: 1.6;
+}
+
+/* 通用按钮 */
+.btn {
+  font-size: 26rpx;
+  padding: 12rpx 22rpx;
+  border: 1rpx solid rgba(0, 0, 0, .12);
+  border-radius: 10rpx;
+  background: #fff;
+  margin-right: 12rpx;
+  line-height: 1.4;
+}
+
+.btn.primary {
+  background: #185fa5;
+  color: #fff;
+  border-color: #185fa5;
+}
+
+.btn.plain {
+  background: #f7f8fa;
+}
+
+/* 判定条：健康=绿， 警告=橙， 阻断=红 */
+.verdict {
+  font-size: 25rpx;
+  padding: 14rpx 18rpx;
+  border-radius: 10rpx;
+  margin-top: 14rpx;
+  line-height: 1.5;
+}
+
+.verdict.ok { background: #e8f5ec; color: #1e7b34; }
+.verdict.warn { background: #fff4e5; color: #a86300; }
+.verdict.bad { background: #fdecec; color: #b3261e; }

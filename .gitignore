@@ -1,0 +1,17 @@
+# 微信开发者工具的本机私有配置（含本地路径、编译偏好，不应入库）
+project.private.config.json
+
+# 依赖与构建产物
+node_modules/
+miniprogram_npm/
+package-lock.json
+
+# 系统与编辑器
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# 日志与临时文件
+*.log
+*.tmp

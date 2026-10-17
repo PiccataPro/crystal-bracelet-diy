@@ -1,0 +1,146 @@
+/* pages/orders/orders.wxss —— 店主订单列表
+ * ⚠️ 尺寸一律 rpx（750rpx = 屏宽），不写死 px —— 否则跨机型会溢出/失真。
+ */
+
+.page {
+  padding-bottom: 40rpx;
+}
+
+/* ========== 顶部汇总 ========== */
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24rpx 24rpx 16rpx;
+}
+
+.head-t {
+  font-size: 34rpx;
+  font-weight: 600;
+}
+
+.head-s {
+  font-size: 24rpx;
+  color: #888;
+  margin-top: 6rpx;
+}
+
+.clear {
+  font-size: 26rpx;
+  color: #b3261e;
+  padding: 10rpx 24rpx;
+  border: 1rpx solid #e6c9c7;
+  border-radius: 10rpx;
+  background: #fff;
+}
+
+.clear-off {
+  color: #bbb;
+  border-color: #e6e6e6;
+}
+
+/* ========== 空态 ========== */
+.empty {
+  font-size: 26rpx;
+  color: #999;
+  line-height: 1.7;
+  padding: 80rpx 48rpx;
+  text-align: center;
+}
+
+/* ========== 订单卡 ========== */
+.od {
+  background: #fff;
+  border-radius: 16rpx;
+  padding: 24rpx;
+  margin: 20rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, .05);
+}
+
+.od-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.od-no {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #185fa5;
+}
+
+.od-amt {
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #b3261e;
+}
+
+.od-line {
+  font-size: 25rpx;
+  color: #444;
+  line-height: 1.7;
+  margin-top: 8rpx;
+}
+
+.od-dim {
+  font-size: 23rpx;
+  color: #999;
+}
+
+/* 珠子实物清单 */
+.od-beads {
+  display: flex;
+  flex-wrap: wrap;
+  margin-top: 14rpx;
+}
+
+.od-bead {
+  width: 30rpx;
+  height: 30rpx;
+  border-radius: 50%;
+  margin: 0 8rpx 8rpx 0;
+  box-shadow: inset -2rpx -2rpx 4rpx rgba(0, 0, 0, .18);
+}
+
+.od-foot {
+  display: flex;
+  align-items: center;
+  margin-top: 14rpx;
+  padding-top: 12rpx;
+  border-top: 1rpx solid #f0f0f0;
+}
+
+.od-st {
+  font-size: 23rpx;
+  padding: 4rpx 14rpx;
+  border-radius: 8rpx;
+  background: #fff4e5;
+  color: #a86300;
+}
+
+.od-st.done {
+  background: #e8f5ec;
+  color: #1e7b34;
+}
+
+.od-time {
+  font-size: 23rpx;
+  color: #aaa;
+  margin-left: 14rpx;
+  flex: 1;
+}
+
+.od-del {
+  font-size: 24rpx;
+  color: #b3261e;
+  padding: 6rpx 16rpx;
+}
+
+/* ========== 页脚说明 ========== */
+.tips {
+  font-size: 22rpx;
+  color: #aaa;
+  line-height: 1.7;
+  padding: 20rpx 40rpx;
+  text-align: center;
+}

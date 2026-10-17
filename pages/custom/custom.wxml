@@ -1,0 +1,205 @@
+<!-- pages/custom/custom.wxml —— 定制核心页
+     ⚠️ 小程序 WXML 的限制（与浏览器最大的不同）：
+       1. 不支持函数调用、模板字符串、任意表达式 —— 只能取 data 上的字段
+       2. 事件必须用 bind/catch 绑定，参数通过 data-* 传递
+       3. 循环用 wx:for，条件用 wx:if/elif/else
+     所以「算出来的样式」必须在 JS 里预先算好放进 data，不能像浏览器那样内联计算。
+-->
+
+<!-- 拖动珠子上手环期间锁住**页面**滚动。
+     只锁 scroll-view 不够：列表滚不动之后纵向手势会冒泡给页面，页面照样上下跑。
+     page-meta 必须是页面的第一个节点。 -->
+<page-meta page-style="{{(libDragging || dragLock) ? 'overflow:hidden;' : ''}}"></page-meta>
+
+<view class="page">
+
+  <!-- ========== 1. 配珠台：左珠材库 + 右预览 ========== -->
+  <view class="card">
+    <view class="card-head">
+      <text class="card-title">1 配珠台 · 拖到右侧加入</text>
+      <text class="tag">{{canvasTag}}</text>
+    </view>
+
+    <!-- 垃圾桶：把手环上的珠子拖到这里松手即删除。
+         ⚠️ 刻意放在画布**之外**的左上角（与珠材库同列）。
+            若压在画布上，手串颗数一多、环变大时珠子会被画进桶区，
+            看起来像「自动落入垃圾桶」——故几何上必须与画布完全不重叠，
+            JS 里另有一道运行期安全阀，检测到重叠即整块禁用。 -->
+    <view class="trash {{dragOverTrash ? 'trash-on' : ''}}" id="trash">
+      <view class="trash-ico"></view>
+      <text class="trash-txt">{{dragOverTrash ? '松手删除这颗' : '拖到这里删除'}}</text>
+    </view>
+
+    <!-- 珠径筛选：店主预置的可售规格（8/10/12/14mm），客人在这几档里挑。
+         珠材库 = 材质 × 直径 的组合，切换筛选即换一批 SKU。 -->
+    <view class="dfilter">
+      <view wx:for="{{dFilters}}" wx:key="v"
+            class="df {{filterD === item.v ? 'df-on' : ''}}"
+            bindtap="onFilterD" data-v="{{item.v}}">{{item.label}}</view>
+    </view>
+
+    <!-- 宽度分配：卡片可用 662rpx = 珠材库 144 + 间距 12 + 画布 506 -->
+    <view class="preview-row">
+
+      <!-- 左：珠材库（竖列）。点一下展开介绍、直径与价格；按住拖到右侧手环即加一颗。
+           ⚠️ scroll-y 绑 libDragging：只有判定为「横向拖珠」时才锁滚动。
+              竖着划始终保留滚动能力，否则顾客就没法翻看下面的珠材了。 -->
+      <scroll-view class="lib-rail" scroll-y="{{!libDragging}}" enhanced show-scrollbar="{{false}}">
+        <view wx:for="{{libView}}" wx:key="key"
+              class="lib-item {{expandedId === item.key ? 'lib-on' : ''}}"
+              bindtap="onTapLib"
+              bindtouchstart="onLibDragStart"
+              bindtouchmove="onLibDragMove"
+              bindtouchend="onLibDragEnd"
+              bindtouchcancel="onLibDragEnd"
+              data-id="{{item.id}}"
+              data-d="{{item.d}}"
+              data-key="{{item.key}}">
+
+          <view class="lib-row">
+            <view class="lib-dot" style="background:{{item.hex}};"></view>
+            <view class="lib-meta">
+              <text class="lib-name">{{item.name}}</text>
+              <!-- 「全部」筛选下同一材质有 4 条，必须标出各自直径才能区分 -->
+              <text class="lib-sub" wx:if="{{filterD === 'all'}}">{{item.d}}mm</text>
+            </view>
+          </view>
+
+          <!-- 展开区：直径 + 价格 + 介绍。catchtap 阻止冒泡，避免又被外层收起 -->
+          <view wx:if="{{expandedId === item.key}}" class="lib-detail">
+            <text class="lib-price">{{item.d}}mm · ¥{{item.curPrice}}/颗</text>
+            <text class="lib-intro">{{item.intro}}</text>
+            <view class="lib-btn" catchtap="onPickBead" data-id="{{item.id}}" data-d="{{item.d}}">加一颗</view>
+            <text class="lib-tip">或按住珠子拖到右侧手环</text>
+          </view>
+        </view>
+      </scroll-view>
+
+      <!-- 右：预览画布。dragOverCanvas 时高亮，提示「松手即加入」 -->
+      <view class="stage {{dragOverCanvas ? 'stage-over' : ''}}">
+        <!-- disable-scroll 绑 dragLock：手指在画布上拖珠时禁止页面滚动/下拉刷新。
+             这是 canvas 的原生属性，比 page-style 更早生效（不受 setData 异步影响）。 -->
+        <canvas type="2d" id="cv" class="cv"
+                disable-scroll="{{dragLock}}"
+                bindtouchstart="onTouchStart"
+                bindtouchmove="onTouchMove"
+                bindtouchend="onTouchEnd"
+                bindtouchcancel="onTouchEnd"></canvas>
+      </view>
+    </view>
+
+    <!-- 判定条 + 可执行建议。左边说「现在怎么样」，右边说「该怎么办」 -->
+    <view wx:if="{{verdict}}" class="verdict-row">
+      <view class="verdict {{verdict.level}}">{{verdict.msg}}</view>
+      <view wx:if="{{adviceLabel}}" class="advice-col">
+        <view class="advice advice-{{adviceLevel}}">{{adviceLabel}}</view>
+        <view wx:if="{{adviceAlt}}" class="advice-alt">{{adviceAlt}}</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- ========== 2. 排列顺序 ========== -->
+  <view class="card">
+    <view class="card-head">
+      <text class="card-title">2 排列顺序</text>
+      <text class="tag">点选定位 · 长按删除</text>
+    </view>
+
+    <scroll-view class="seq" scroll-x enable-flex>
+      <view class="seq-inner">
+        <view wx:for="{{seqView}}" wx:key="i"
+              class="bead {{item.sel ? 'bead-sel' : ''}}"
+              bindtap="onTapSeq"
+              bindlongpress="onLongPressSeq"
+              data-i="{{item.i}}">
+          <!-- dot 的尺寸用 rpx（不是 px）：px 在不同屏宽下视觉会失真，
+               且会与画布里按毫米真实比例画出的珠子对不上。见 custom.js 的 DOT_RPX -->
+          <view class="dot" style="background:{{item.hex}}; width:{{item.rpx}}rpx; height:{{item.rpx}}rpx;"></view>
+          <text class="bead-n">{{item.d}}</text>
+        </view>
+        <view wx:if="{{!seqCount}}" class="hint-empty">还没配珠子，点左侧珠材库开始</view>
+      </view>
+    </scroll-view>
+
+    <view class="btn-row">
+      <view class="btn" bindtap="onOneKey" data-k="mirror">一键对称</view>
+      <view class="btn" bindtap="onOneKey" data-k="grad">一键渐变</view>
+      <view class="btn" bindtap="onOneKey" data-k="rand">随机</view>
+      <view class="btn" bindtap="onOneKey" data-k="fit">按腕围补满</view>
+      <view class="btn" bindtap="onOneKey" data-k="reset">清空</view>
+    </view>
+
+    <!-- 随机成品（C-18）：紧贴上方一键行，不另起标题行 —— 省掉一行高度，内容整体上提 -->
+    <view class="btn-row tight">
+      <view class="btn primary" bindtap="onPreset">🎲 换一条成品</view>
+      <text class="hint" wx:if="{{presetHint}}">{{presetHint}}</text>
+    </view>
+
+    <!-- 色带分段 -->
+    <view class="band-wrap" wx:if="{{bands.length}}">
+      <view class="bands">
+        <view wx:for="{{bands}}" wx:key="i"
+              class="band"
+              style="background:{{item.hex}}; width:{{item.n * 26}}rpx;">
+        </view>
+      </view>
+      <view class="hint">{{bandHint}}</view>
+    </view>
+  </view>
+
+  <!-- ========== 3. 尺寸 ========== -->
+  <view class="card">
+    <view class="card-title">3 尺寸</view>
+
+    <view class="row">
+      <text class="label">手腕围</text>
+      <slider class="slider" min="140" max="200" value="{{wrist}}"
+              activeColor="#185FA5" block-size="20"
+              bindchanging="onWrist" bindchange="onWrist" />
+      <text class="val">{{wrist}}mm</text>
+    </view>
+
+    <view class="row">
+      <text class="label">松紧</text>
+      <view class="seg">
+        <view wx:for="{{easeOptions}}" wx:key="value"
+              class="seg-item {{ease === item.value ? 'on' : ''}}"
+              bindtap="onEase" data-v="{{item.value}}">{{item.label}}</view>
+      </view>
+    </view>
+
+    <view class="row">
+      <text class="label">绳材</text>
+      <view class="seg">
+        <view wx:for="{{cordOptions}}" wx:key="value"
+              class="seg-item {{cord === item.value ? 'on' : ''}}"
+              bindtap="onCord" data-v="{{item.value}}">{{item.label}}</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- ========== 4. 报价 + 下单 ========== -->
+  <view class="card">
+    <view class="card-title">4 报价</view>
+
+    <view class="quote-row">
+      <view class="quote">¥{{total}}</view>
+      <!-- 颗数 < 3 时按钮置灰（JS 里同样拦一次，双保险） -->
+      <view class="order-btn {{canOrder ? '' : 'order-btn-off'}}" bindtap="onMakeOrder">生成订单</view>
+    </view>
+
+    <view class="hint" wx:if="{{seqCount}}">{{priceDetail}}</view>
+    <view class="order-ok" wx:if="{{orderHint}}">{{orderHint}}</view>
+  </view>
+
+  <!-- 珠材库已并入上方「1 配珠台」的左侧竖列，此处不再单独成卡 -->
+
+</view>
+
+<!-- 跟手浮层：按住珠材库条目拖动时，一颗同色珠子贴着手指走。
+     刻意放在 page 之外作为独立根节点 —— 避免任何祖先的 transform/overflow
+     把 fixed 定位的参照系改掉，导致浮层坐标整体偏移。
+     translate3d 走合成层不触发重排；结尾 translate(-50%,-50%) 让珠子中心（而非左上角）
+     对准手指，松手前顾客能准确看到珠子在哪个位置落下。 -->
+<view wx:if="{{ghostOn}}" class="drag-ghost"
+      style="width:{{ghostSize}}px;height:{{ghostSize}}px;background:{{ghostHex}};transform:translate3d({{ghostX}}px,{{ghostY}}px,0) translate(-50%,-50%);"></view>
