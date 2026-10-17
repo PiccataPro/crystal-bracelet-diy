@@ -10,6 +10,8 @@ A zero-dependency WeChat Mini Program demo: drag beads onto a bracelet ring, get
 
 > 纯演示用途，不含任何第三方代码、不含后端。订单只落本机 storage。
 
+**在线演示（浏览器）**：https://piccatapro.github.io/crystal-bracelet-diy/ —— 同一套算法与拖拽逻辑的网页版，手机直接打开就能玩。**注意它不是小程序本体**：WXML/WXSS 只有微信运行时能渲染，网页版只能验算法、报价与手感。
+
 ---
 
 ## 功能
@@ -44,6 +46,7 @@ pages/orders                     订单管理（店主侧，本地表）
 utils/bracelet-core.js           算法核心（零依赖纯函数，可单独跑 Node）
 utils/order-store.js             订单构建 / 本地存取 / 推送通道占位
 sitemap.json                     站点索引配置
+docs/index.html                  GitHub Pages 网页版演示（自包含单文件，非小程序本体）
 ```
 
 ## 算法要点
@@ -68,6 +71,8 @@ sitemap.json                     站点索引配置
 ## English Summary
 
 A WeChat Mini Program demo for designing crystal bracelets. Customers pick beads, drag them onto a ring, reorder or insert between beads by dragging, and see a live price plus a wearability verdict. Orders are frozen into local `storage`.
+
+**Live demo (browser):** https://piccatapro.github.io/crystal-bracelet-diy/ — a self-contained web prototype driven by the same geometry and drag logic. It is *not* the Mini Program itself (WXML/WXSS only render inside WeChat), but it is enough to feel the interaction and verify the maths without installing any tooling.
 
 **Why the geometry matters.** The naive formula `count = wrist ÷ beadDiameter` treats an arc as a straight line and over-prices — for a 165 mm wrist with 10 mm beads it yields 16 beads, an inner diameter of ~41 mm that a 52.5 mm palm cannot pass through. This project instead solves the closed loop numerically: beads are tangent along a circle, each bead's central angle depends on the radii of its two neighbours, and the angles must sum to exactly 2π. It stays correct when bead diameters are mixed, and degenerates exactly to `R = d / (2·sin(π/n))`, `innerDiameter = 2R − d` for the uniform case.
 
