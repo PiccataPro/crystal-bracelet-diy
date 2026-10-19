@@ -110,6 +110,7 @@ input,select,textarea{font-family:inherit;color:inherit}
   position:absolute;left:0;right:0;bottom:0;
   display:flex;flex-wrap:wrap;gap:2px 6px;padding:0 12px 3px;
   font-size:9.5px;line-height:1.45;color:var(--ink-3);justify-content:center;
+  pointer-events:none; /* 纯展示：别挡住画布上删除气泡的点击 */
 }
 #info span{flex:0 0 auto;background:rgba(255,255,255,.72);border-radius:8px;padding:1px 6px}
 #info b{color:var(--ink-2);font-weight:700;font-variant-numeric:tabular-nums}
@@ -643,6 +644,10 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;bac
   box-shadow:inset 0 0 0 1px var(--line);transition:.12s;
 }
 .catrow .pz.cus{background:#FFF3E4;color:#C77A2B}
+/* 尺寸标签 + ¥ 前缀：与输入框里的价格区分开，避免「8¥ 5」被读成价格 */
+.catrow .pz em{font-style:normal;font-size:9px;font-weight:700;color:#C4B5A8;margin-right:3px}
+.catrow .pz i{font-style:normal;font-weight:800;color:inherit;margin-right:1px}
+.catrow .pz.cus em{color:#DDB08A}
 .catrow .pz.dis{opacity:.45}
 .catrow .pz:focus-within{box-shadow:inset 0 0 0 1.5px var(--peach)}
 .catrow .pz-in{
@@ -2131,12 +2136,108 @@ function shade(hex, p) {
   return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
 }
 
+/* =====================================================================
+ * 配件形态：串在绳上的配件是「孔道沿绳方向」的圆柱/圆片/杯，
+ * 不是球。画布上画侧视图：线从孔里穿过，面沿半径方向撑开。
+ * ===================================================================== */
+const ACC_SHAPE = { ag: 'round', as: 'round', ad: 'disc', ap: 'disc', af: 'cup', ab: 'barrel' };
+
+/** 配件沿半径方向的半面径（沿绳半长固定为 r，布局占位不变） */
+function accRy(id, r) {
+  const s = ACC_SHAPE[id] || 'round';
+  return s === 'disc' ? r * 2.0 : s === 'cup' ? r * 1.3 : s === 'round' ? r * 1.15 : r;
+}
+
+function roundRectPath(ctx, x, y, w, h, rad) {
+  ctx.beginPath();
+  ctx.moveTo(x + rad, y);
+  ctx.arcTo(x + w, y, x + w, y + h, rad);
+  ctx.arcTo(x + w, y + h, x, y + h, rad);
+  ctx.arcTo(x, y + h, x, y, rad);
+  ctx.arcTo(x, y, x + w, y, rad);
+  ctx.closePath();
+}
+
+/** 画一件配件的侧视图。tan = 切线方向（孔道方向），x 轴随之旋转 */
+function drawAccessory(ctx, id, x, y, r, tan) {
+  const m = ACC_MAP[id] || { hex: '#ccc' };
+  const shape = ACC_SHAPE[id] || 'round';
+  const hex = m.hex;
+  const rx = r, ry = accRy(id, r);
+
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(tan);
+
+  /* 金属/珠光柱面渐变：沿半径方向，外缘亮、贴绳侧暗 */
+  const g = ctx.createLinearGradient(0, -ry, 0, ry);
+  g.addColorStop(0, shade(hex, 55));
+  g.addColorStop(.35, shade(hex, 12));
+  g.addColorStop(.62, hex);
+  g.addColorStop(1, shade(hex, -38));
+  ctx.fillStyle = g;
+  ctx.strokeStyle = 'rgba(110,85,65,.35)';
+  ctx.lineWidth = Math.max(.6, r * .05);
+
+  if (shape === 'round') {
+    /* 隔珠：鼓面圆片侧视 ≈ 椭圆 */
+    ctx.beginPath(); ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2);
+    ctx.fill(); ctx.stroke();
+  } else if (shape === 'disc') {
+    /* 隔片：薄圆片侧视 ≈ 扁垫圈，面径略小于相邻珠子才自然 */
+    roundRectPath(ctx, -rx, -ry, rx * 2, ry * 2, Math.min(rx * .35, ry * .18));
+    ctx.fill(); ctx.stroke();
+  } else if (shape === 'barrel') {
+    /* 中空桶珠：短圆柱侧视 = 矩形微倒角 */
+    roundRectPath(ctx, -rx, -ry, rx * 2, ry * 2, rx * .28);
+    ctx.fill(); ctx.stroke();
+  } else if (shape === 'cup') {
+    /* 花托：杯形，口朝一侧，口沿带花瓣凸 */
+    const yb = ry * .45;
+    ctx.beginPath();
+    ctx.moveTo(-rx, -yb);
+    ctx.lineTo(rx * .55, -ry);
+    ctx.lineTo(rx * .55, ry);
+    ctx.lineTo(-rx, yb);
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(rx * .55, -ry * .62, ry * .28, 0, Math.PI * 2);
+    ctx.arc(rx * .55, 0, ry * .28, 0, Math.PI * 2);
+    ctx.arc(rx * .55, ry * .62, ry * .28, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(rx * .55, -ry); ctx.lineTo(rx * .55, ry);
+    ctx.strokeStyle = 'rgba(110,85,65,.25)'; ctx.stroke();
+  }
+
+  /* 孔道阴影 + 穿过的绳段 + 孔口描边 → 「线穿孔」而不是贴图 */
+  const holeRx = rx * (shape === 'barrel' ? .42 : .34), holeRy = Math.max(2, ry * .22);
+  ctx.beginPath(); ctx.ellipse(0, 0, holeRx, holeRy, 0, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(90,70,55,.5)'; ctx.fill();
+
+  ctx.beginPath();
+  ctx.moveTo(-rx - 1.5, 0); ctx.lineTo(rx + 1.5, 0);
+  ctx.strokeStyle = 'rgba(201,195,180,.95)';
+  ctx.lineWidth = 4; ctx.lineCap = 'round';
+  ctx.stroke();
+
+  ctx.beginPath(); ctx.ellipse(0, 0, holeRx, holeRy, 0, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(90,70,55,.5)'; ctx.lineWidth = 1.2; ctx.stroke();
+
+  ctx.restore();
+}
+
 function trashPos(L, idx) {
   const it = L.items[idx];
   if (!it) return null;
   const d = Math.hypot(it.x, it.y) || 1;
-  const off = it.r + 17;
-  return { x: it.x + it.x / d * off, y: it.y + it.y / d * off, r: 13 };
+  /* 配件径向撑得比球大，气泡按实际外缘让开 */
+  const ext = isAcc(it.b.id) ? accRy(it.b.id, it.r) : it.r;
+  const off = ext + 17;
+  /* 下半圈的气泡朝环内侧弹：朝外会掉进画布底部的参数条区域，
+     之前「删除气泡被文字挡住点不动」就是这个原因 */
+  const sgn = it.y > 0 ? -1 : 1;
+  return { x: it.x + it.x / d * off * sgn, y: it.y + it.y / d * off * sgn, r: 13 };
 }
 
 function draw(override) {
@@ -2194,7 +2295,10 @@ function draw(override) {
     }
 
     const bimg = beadImage(it.b.id);
-    if (bimg) {
+    if (isAcc(it.b.id)) {
+      /* 配件：按真实形态画侧视（圆柱/圆片/花托），孔道沿绳方向，线穿孔而过 */
+      drawAccessory(ctx, it.b.id, x, y, r, it.a + Math.PI / 2);
+    } else if (bimg) {
       /* 同一张图反复用，朝向一致会看出「贴图复制」；
          按位置给确定性旋转 + 隔颗镜像，拖拽重绘时不会乱跳 */
       const rot = ((i * 53 + 17) % 360) * Math.PI / 180;
@@ -2238,7 +2342,12 @@ function draw(override) {
     }
 
     if (S.sel === i && i !== dragIdx) {
-      ctx.beginPath(); ctx.arc(x, y, r + 2.5, 0, Math.PI * 2);
+      ctx.save();
+      ctx.translate(x, y); ctx.rotate(it.a + Math.PI / 2);
+      ctx.beginPath();
+      if (isAcc(it.b.id)) ctx.ellipse(0, 0, r + 2.5, accRy(it.b.id, r) + 2.5, 0, 0, Math.PI * 2);
+      else ctx.arc(0, 0, r + 2.5, 0, Math.PI * 2);
+      ctx.restore();
       ctx.strokeStyle = '#2F6B5C'; ctx.lineWidth = 2.5; ctx.stroke();
     }
     if (S.drag && S.drag.intent && S.drag.intent.mode === 'swap'
@@ -3357,7 +3466,7 @@ loadCatalog().then(function () {
           var pzs = ss.map(function (d) {
             var on = !isOff(b.id, d);
             var custom = PRICE_OVR[b.id + ":" + d];
-            return '<span class="pz' + (on ? "" : " dis") + (custom ? " cus" : "") + '"><em>' + d + '</em>¥' +
+            return '<span class="pz' + (on ? "" : " dis") + (custom ? " cus" : "") + '"><em>' + d + 'mm</em><i>¥</i>' +
                    '<input class="pz-in" type="number" min="1" max="20000" step="1" ' +
                    (on ? "" : "disabled ") + 'value="' + priceOf(b.id, d) +
                    '" data-id="' + b.id + '" data-d="' + d + '"></span>';
