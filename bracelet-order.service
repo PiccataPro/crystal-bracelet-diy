@@ -12,9 +12,12 @@ WorkingDirectory=/opt/bracelet
 Environment=BRACELET_DB=/var/lib/bracelet/orders.db
 Environment=BRACELET_SECRET=/var/lib/bracelet/.secret
 Environment=BRACELET_PORT=41890
-# 真实账号密码只存在服务器上，不进公开仓库
-Environment=BRACELET_ADMIN_USER=马莉莎
-Environment=BRACELET_ADMIN_PASS=20061121
+# ⚠️ 账号密码不要写在这个文件里（仓库是公开的）。
+# 用 drop-in 注入，只有服务器本地可见：
+#   sudo systemctl edit bracelet-order
+#   [Service]
+#   Environment=BRACELET_ADMIN_USER=你的账号
+#   Environment=BRACELET_ADMIN_PASS=你的密码
 Environment=PYTHONUNBUFFERED=1
 ExecStart=/usr/bin/python3 /opt/bracelet/server.py
 Restart=always
