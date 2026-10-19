@@ -55,6 +55,9 @@ BEAD_IDS = {"w", "pk", "ro", "am", "te", "ye", "ls", "nv", "gr", "rd", "bk", "pe
             "s7", "mo", "aq", "lb", "pr", "ga"}
 ACC_IDS = {"ag", "as", "ad", "ap", "af", "ab"}
 ALL_IDS = BEAD_IDS | ACC_IDS
+BEAD_SIZES = (8, 10, 12, 14)
+# 配件不是按珠径卖的，各自固定厚度
+ACC_SIZE = {"ag": 6, "as": 6, "ad": 4, "ap": 4, "af": 8, "ab": 8}
 # 搜索时要能把中文珠材名也匹配上，否则店主搜「黑曜石」一条都搜不到
 BEAD_NAMES = {
     "w": "白水晶", "pk": "草莓晶", "ro": "粉晶", "am": "紫水晶", "te": "茶晶",
@@ -124,9 +127,9 @@ def init_db():
         if "phone" not in cols:
             c.execute("ALTER TABLE orders ADD COLUMN phone TEXT")
         c.execute("CREATE INDEX IF NOT EXISTS idx_phone ON orders(phone)")
-        # 珠材上下架：只记「有状态变更」的条目，缺省即上架
-        c.execute("""CREATE TABLE IF NOT EXISTS catalog (
-                        id TEXT PRIMARY KEY,
+        # 珠材上下架（SKU 级）：key 是「材质:尺寸」，缺省即上架
+        c.execute("""CREATE TABLE IF NOT EXISTS catalog_sku (
+                        sku TEXT PRIMARY KEY,
                         enabled INTEGER NOT NULL,
                         updated_at INTEGER NOT NULL
                     )""")
@@ -320,10 +323,15 @@ class Handler(BaseHTTPRequestHandler):
 
         if path == "/api/catalog":
             # 公开：客人端要据此过滤菜单，外泄的只是「哪些没货」，无所谓
-            with db() as c:
-                off = [r[0] for r in c.execute(
-                    "SELECT id FROM catalog WHERE enabled=0").fetchall()]
-            return self._send(200, {"ok": True, "off": off})
+            try:
+                with db() as c:
+                    off = [r[0] for r in c.execute(
+                        "SELECT sku FROM catalog_sku WHERE enabled=0").fetchall()]
+                return self._send(200, {"ok": True, "off": off})
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
+                return self._err(500, "读取失败，请稍后再试")
 
         if path == "/api/orders":
             if not self._token():
@@ -396,13 +404,26 @@ class Handler(BaseHTTPRequestHandler):
             bid = str(d.get("id", ""))
             if bid not in ALL_IDS:
                 return self._err(400, "未知珠材")
+            try:
+                size = int(d.get("d", 0))
+            except (TypeError, ValueError):
+                return self._err(400, "尺寸不对")
+
+            # 珠子只卖 8/10/12/14；配件固定厚度，不接受别的尺寸
+            if bid in ACC_IDS:
+                if size != ACC_SIZE.get(bid):
+                    return self._err(400, "配件尺寸固定")
+            elif size not in BEAD_SIZES:
+                return self._err(400, "珠径只能是 8/10/12/14")
+
+            key = "%s:%d" % (bid, size)
             enabled = 1 if d.get("enabled") else 0
             with db() as c:
-                c.execute("INSERT INTO catalog(id, enabled, updated_at) VALUES(?,?,?) "
-                          "ON CONFLICT(id) DO UPDATE SET enabled=excluded.enabled, "
+                c.execute("INSERT INTO catalog_sku(sku, enabled, updated_at) VALUES(?,?,?) "
+                          "ON CONFLICT(sku) DO UPDATE SET enabled=excluded.enabled, "
                           "updated_at=excluded.updated_at",
-                          (bid, enabled, int(time.time() * 1000)))
-            return self._send(200, {"ok": True, "id": bid, "enabled": bool(enabled)})
+                          (key, enabled, int(time.time() * 1000)))
+            return self._send(200, {"ok": True, "sku": key, "enabled": bool(enabled)})
 
         if path == "/api/my-orders":
             # 顾客按手机号查自己的订单。手机号即凭证——小店场景够用，

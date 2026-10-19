@@ -584,10 +584,32 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;bac
 .cathint{padding:0 18px 10px;font-size:10.5px;color:var(--ink-3);line-height:1.6;flex:0 0 auto}
 .catgrid{
   flex:1 1 auto;min-height:0;overflow-y:auto;
-  display:grid;grid-template-columns:repeat(3,1fr);gap:9px;
+  display:flex;flex-direction:column;gap:7px;
   padding:0 16px calc(20px + env(safe-area-inset-bottom));
   -webkit-overflow-scrolling:touch;
 }
+.catrow{
+  display:flex;align-items:center;gap:10px;
+  background:#fff;border-radius:14px;padding:8px 11px;
+  box-shadow:0 2px 10px rgba(214,164,136,.14),inset 0 0 0 1px var(--line);
+}
+.catrow .ci-dot{
+  width:36px;height:36px;border-radius:50%;flex:0 0 auto;
+  background-size:cover;background-position:center;
+  box-shadow:inset 0 0 0 1px rgba(160,140,125,.28);
+}
+.catrow .ci-nm{
+  flex:1 1 auto;min-width:0;font-size:12px;font-weight:800;color:var(--ink-2);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.catrow .sizes{display:flex;gap:4px;flex:0 0 auto}
+.catrow .sz{
+  width:33px;border-radius:8px;padding:6px 0;font-size:10px;font-weight:800;
+  background:#DFF3E8;color:#2F7D5C;transition:.12s;
+}
+.catrow .sz.off{background:#F2EDE8;color:#B6A99C;text-decoration:line-through}
+.catrow .sz:active{transform:scale(.9)}
+.catrow .sz:disabled{opacity:.6}
 .catgroup{
   grid-column:1/-1;font-size:10px;font-weight:800;color:var(--ink-3);
   letter-spacing:.1em;margin:2px 0 -2px;display:flex;align-items:center;gap:6px;
@@ -1916,8 +1938,23 @@ function priceOf(id, d) {
 }
 function isAcc(id) { return !!ACC_MAP[id]; }
 
-/* 下架的珠材/配件 id。服务端只存「有状态变更」的条目，缺省上架。 */
+/* 下架状态按 **SKU** 记：「材质:尺寸」，例如 bk:12。
+ * 同一颗黑曜石 8mm 有货、12mm 断货是很常见的，所以不能用材质整体开关。
+ * 服务端只存有状态变更的条目，缺省上架。 */
 const OFF = new Set();
+const BEAD_SIZES = [8, 10, 12, 14];
+
+function skuOf(id, d) { return id + ":" + d; }
+function isOff(id, d) {
+  if (OFF.has(skuOf(id, d))) return true;
+  if (OFF.has(id)) return true;        // 兼容早期「整材质」写法
+  return false;
+}
+/* 所有尺寸都没货才算整项下架，否则留在菜单里、标缺货 */
+function fullyOff(b, acc) {
+  if (acc) return isOff(b.id, b.d);
+  return BEAD_SIZES.every(function (d) { return isOff(b.id, d); });
+}
 
 function loadCatalog() {
   return fetch("/api/catalog", { cache: "no-store" })
@@ -1930,9 +1967,18 @@ function loadCatalog() {
     .catch(function () { /* 没后端（静态托管）时全部当上架 */ });
 }
 
+function tip(msg) {
+  const el = $("toast");
+  if (!el) return;
+  el.textContent = msg;
+  el.classList.add("show");
+  clearTimeout(tip._t);
+  tip._t = setTimeout(function () { el.classList.remove("show"); }, 2300);
+}
+
 /* 客人菜单只列上架项 */
 function libList(acc) {
-  return (acc ? ACCESSORIES : C.BEADS).filter(function (b) { return !OFF.has(b.id); });
+  return (acc ? ACCESSORIES : C.BEADS).filter(function (b) { return !fullyOff(b, acc); });
 }
 
 /* ========= 状态 ========= */
@@ -2374,8 +2420,9 @@ function renderLib() {
 
   list.forEach(function (b) {
     const d = acc ? b.d : S.newD;
+    const soldOut = isOff(b.id, d);
     const el = document.createElement('div');
-    el.className = 'bead' + (acc ? ' acc' : '');
+    el.className = 'bead' + (acc ? ' acc' : '') + (soldOut ? ' out' : '');
 
     const dot = document.createElement('div'); dot.className = 'dot';
     beadCardStyle(dot, b);
@@ -2386,13 +2433,18 @@ function renderLib() {
     pr.textContent = acc ? ('¥' + b.price + '/个') : (S.newD + 'mm ¥' + priceOf(b.id, S.newD));
 
     const add = document.createElement('div'); add.className = 'add';
-    add.textContent = S.sel >= 0 ? '替换' : (acc ? '加上' : '+1');
+    add.textContent = soldOut ? (acc ? '缺货' : d + 'mm 缺货')
+                              : (S.sel >= 0 ? '替换' : (acc ? '加上' : '+1'));
 
     el.appendChild(dot); el.appendChild(nm); el.appendChild(pr); el.appendChild(add);
     el.title = b.name + (acc ? ' · 厚 ' + b.d + 'mm' : ' ' + S.newD + 'mm');
 
     el.addEventListener('click', function () {
       if (suppressClick) { suppressClick = false; return; }
+      if (soldOut) {
+        tip(b.name + " " + d + "mm 暂时没货" + (acc ? "" : "，换个珠径试试"));
+        return;
+      }
       if (S.sel >= 0 && S.sel < S.seq.length) {
         S.seq = C.replaceAt(S.seq, S.sel, b.id, d);
         S.sel = -1;
@@ -2808,7 +2860,7 @@ function loadPreset() {
        按 Lab 色差找最接近的在售珠，并优先选这串里还没出现过的，保住原配色的层次。 */
     const used = {};
     S.seq = r.seq.map(function (b) {
-      if (okSet.has(b.id)) {
+      if (okSet.has(b.id) && !isOff(b.id, b.d)) {
         used[b.id] = (used[b.id] || 0) + 1;
         return b;
       }
@@ -3212,43 +3264,54 @@ loadCatalog().then(function () {
     if (!box) return;
 
     var groups = [
-      { name: "水晶珠材 · " + C.BEADS.length, list: C.BEADS },
-      { name: "配件 · " + ACCESSORIES.length, list: ACCESSORIES }
+      { name: "水晶珠材 · " + C.BEADS.length + " 种 × 4 个尺寸", list: C.BEADS, sizes: BEAD_SIZES },
+      { name: "配件 · " + ACCESSORIES.length + " 种", list: ACCESSORIES, sizes: null }
     ];
 
     box.innerHTML = groups.map(function (g) {
       return '<div class="catgroup">' + g.name + '</div>' +
         g.list.map(function (b) {
-          var on = !OFF.has(b.id);
-          var url = (typeof beadBg === "function") ? beadBg(b.id) : "";
+          var url = beadBg(b.id);
           var hex = (C.MAP[b.id] || {}).hex || "#ddd";
-          var style = url
+          var dotStyle = url
             ? ("background-image:" + url + ";background-color:" + hex + ";background-size:cover;background-position:center")
             : ("background:" + hex);
-          return '<div class="catitem' + (on ? "" : " off") + '" data-id="' + b.id + '">' +
-            '<div class="ci-dot" style="' + style + '"></div>' +
+
+          var ss = g.sizes || [b.d];
+          var chips = ss.map(function (d) {
+            var on = !isOff(b.id, d);
+            return '<button class="sz' + (on ? "" : " off") + '" data-id="' + b.id +
+                   '" data-d="' + d + '">' + d + '</button>';
+          }).join("");
+
+          return '<div class="catrow">' +
+            '<div class="ci-dot" style="' + dotStyle + '"></div>' +
             '<div class="ci-nm">' + b.name + '</div>' +
-            '<div class="ci-sw">' + (on ? "在售" : "已下架") + '</div>' +
+            '<div class="sizes">' + chips + '</div>' +
           '</div>';
         }).join("");
     }).join("");
   }
 
   if (q("catGrid")) q("catGrid").addEventListener("click", function (e) {
-    var it = e.target.closest(".catitem");
-    if (!it) return;
-    var id = it.dataset.id;
-    var nextOn = OFF.has(id);   // 当前下架 → 点了就该上架
+    var btn = e.target.closest(".sz");
+    if (!btn) return;
+    var id = btn.dataset.id;
+    var d = parseInt(btn.dataset.d, 10);
+    var nextOn = isOff(id, d);          // 当前下架 → 点了就该上架
 
-    api("/api/catalog", { method: "POST", body: { id: id, enabled: nextOn } })
+    btn.disabled = true;
+    api("/api/catalog", { method: "POST", body: { id: id, d: d, enabled: nextOn } })
       .then(function (r) {
-        if (r.enabled) OFF.delete(id); else OFF.add(id);
+        var key = skuOf(id, d);
+        if (r.enabled) OFF.delete(key); else OFF.add(key);
         renderCatGrid();
-        renderLib();               // 客人菜单即时同步
-        var b = C.MAP[id] || {};
-        toast((b.name || id) + (r.enabled ? " 已上架" : " 已下架"));
+        renderLib();                    // 客人菜单即时同步
+        var name = (C.MAP[id] || {}).name || id;
+        toast(name + " " + d + "mm " + (r.enabled ? "已上架" : "已下架"));
       })
-      .catch(function (err) { toast(err.message || "操作失败"); });
+      .catch(function (err) { toast(err.message || "操作失败"); })
+      .finally(function () { btn.disabled = false; });
   });
 
   /* 页签切换 */
