@@ -2,183 +2,897 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>水晶手串配置器 · 浏览器预览原型</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#FFF6EA">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="format-detection" content="telephone=no">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='11' fill='none' stroke='%23F58A6E' stroke-width='2.5'/%3E%3Ccircle cx='16' cy='5' r='4.2' fill='%23CFC0EE'/%3E%3Ccircle cx='26' cy='19' r='4.2' fill='%23FFB4C6'/%3E%3Ccircle cx='7' cy='21' r='4.2' fill='%23FFD883'/%3E%3C/svg%3E">
+<title>水晶手串 · 捏一条只属于你的</title>
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
-  background:#F7F6F2;color:#2C2C2A;line-height:1.6;font-size:13px}
-.wrap{max-width:1220px;margin:0 auto;padding:20px 24px 60px}
+:root{
+  --bg-1:#FFFBF4; --bg-2:#FFF1E1; --bg-3:#FFE8EC;
+  --card:#FFFFFF; --card-2:#FFF9F3;
+  --peach:#FFA98F; --peach-d:#F58A6E; --peach-l:#FFE9E0;
+  --butter:#FFD883; --butter-l:#FFF3D6;
+  --mint:#A9DDC3; --mint-l:#E6F6EE;
+  --lilac:#CFC0EE; --lilac-l:#F0EBFB;
+  --rose:#FFB4C6; --rose-l:#FFEDF1;
+  --ink:#5B4436; --ink-2:#8E6E5B; --ink-3:#B79C8B;
+  --line:rgba(198,158,132,.20);
+  --shadow:0 3px 12px rgba(214,164,136,.16);
+  --shadow-lg:0 10px 28px rgba(214,164,136,.24);
+  --r-lg:24px; --r-md:18px; --r-sm:12px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;overscroll-behavior:none}
+body{
+  font-family:ui-rounded,"SF Pro Rounded",-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  color:var(--ink);font-size:14px;line-height:1.5;
+  background:
+    radial-gradient(120% 55% at 50% -4%, #FFFEFA 0%, #FFF8E9 32%, #FFF1EC 66%, #FFE9E6 100%);
+  -webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%;
+}
+button{font-family:inherit;color:inherit;border:none;background:none;-webkit-appearance:none;appearance:none;cursor:pointer}
+input,select,textarea{font-family:inherit;color:inherit}
+[hidden]{display:none !important}
 
-.banner{background:#FAEEDA;border:1px solid #FAC775;border-radius:12px;padding:14px 18px;margin-bottom:20px}
-.banner h3{font-size:14px;font-weight:500;color:#854F0B;margin-bottom:6px}
-.banner p{font-size:12.5px;color:#633806;line-height:1.7}
-.banner b{font-weight:500}
+/* ================= 视图骨架 ================= */
+.view{
+  display:flex;flex-direction:column;
+  height:100vh;height:100dvh;
+  padding-top:env(safe-area-inset-top);
+}
+.view.shop{position:relative}
+@media(min-width:560px){
+  .view{max-width:540px;margin:0 auto}
+  .modal-card{max-width:540px}
+}
 
-.grid{display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start}
-@media(max-width:900px){.grid{grid-template-columns:1fr}}
+/* 背景柔光装饰 */
+.view.shop::before,.view.shop::after{
+  content:"";position:absolute;pointer-events:none;z-index:0;border-radius:50%;
+}
+.view.shop::before{
+  width:130px;height:130px;left:-50px;top:92px;
+  background:radial-gradient(circle at 35% 35%,rgba(255,216,131,.5),rgba(255,216,131,0) 70%);
+}
+.view.shop::after{
+  width:160px;height:160px;right:-60px;top:205px;
+  background:radial-gradient(circle at 60% 40%,rgba(207,192,238,.4),rgba(207,192,238,0) 72%);
+}
 
-.card{background:#fff;border:1px solid rgba(0,0,0,.09);border-radius:12px;padding:18px;margin-bottom:16px}
-.card h2{font-size:14px;font-weight:500;margin-bottom:14px;display:flex;align-items:center;gap:8px}
-.card h2 .n{width:20px;height:20px;border-radius:5px;background:#E6F1FB;color:#185FA5;font-size:11px;
-  display:grid;place-items:center;font-weight:500}
-.card h2 .tag{margin-left:auto;font-size:11px;color:#888780;font-weight:400}
+/* ================= 顶栏 ================= */
+.hdr{
+  position:relative;z-index:2;flex:0 0 auto;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:12px 18px 6px;gap:10px;
+}
+.brand{display:flex;align-items:center;gap:9px;min-width:0}
+.brand .mark{
+  width:34px;height:34px;flex:0 0 auto;border-radius:12px;
+  background:linear-gradient(150deg,var(--rose-l),var(--peach-l));
+  display:grid;place-items:center;
+  box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.9),0 2px 8px rgba(245,138,110,.18);
+}
+.brand .mark svg{width:20px;height:20px;display:block}
+.brand h1{font-size:16.5px;font-weight:800;letter-spacing:.02em;line-height:1.2}
+.brand p{font-size:10.5px;color:var(--ink-3);letter-spacing:.04em;margin-top:1px}
+.hdr-actions{display:flex;gap:6px;flex:0 0 auto}
+.iconbtn{
+  width:36px;height:36px;border-radius:13px;
+  background:rgba(255,255,255,.86);
+  box-shadow:var(--shadow),inset 0 0 0 1px var(--line);
+  display:grid;place-items:center;color:var(--ink-2);
+  transition:transform .12s ease;
+}
+.iconbtn:active{transform:scale(.92)}
+.iconbtn svg{width:17px;height:17px}
 
-.stage{background:#F1EFE8;border-radius:12px;padding:20px;display:grid;place-items:center;min-height:360px;
-  background-image:radial-gradient(circle at 50% 45%,#FAF9F5 0%,#E8E5DC 100%)}
-canvas{max-width:100%;height:auto;touch-action:none;cursor:grab}
-canvas.drag{cursor:grabbing}
+/* ================= 舞台 ================= */
+.stagewrap{position:relative;flex:1 1 auto;min-height:0;margin:2px 6px 0;z-index:1}
+/* 展示台柔光：让手串像搁在打光的绒布上，而不是悬空 */
+.stagewrap::before{
+  content:"";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  width:min(84vw,340px);height:min(84vw,340px);border-radius:50%;
+  background:radial-gradient(circle,
+    rgba(255,255,255,.98) 0%, rgba(255,252,245,.72) 48%,
+    rgba(255,246,234,.28) 68%, rgba(255,240,226,0) 78%);
+  pointer-events:none;
+}
+#cv{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+#canvasTag{
+  position:absolute;top:23px;left:12px;right:12px;text-align:center;
+  font-size:9.5px;color:var(--ink-3);letter-spacing:.04em;pointer-events:none;
+}
+#info{
+  position:absolute;left:0;right:0;bottom:0;
+  display:flex;flex-wrap:wrap;gap:2px 6px;padding:0 12px 3px;
+  font-size:9.5px;line-height:1.45;color:var(--ink-3);justify-content:center;
+}
+#info span{flex:0 0 auto;background:rgba(255,255,255,.72);border-radius:8px;padding:1px 6px}
+#info b{color:var(--ink-2);font-weight:700;font-variant-numeric:tabular-nums}
 
-.row{display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap;align-items:center}
-label{font-size:12px;color:#5F5E5A;min-width:56px}
-input[type=range]{flex:1;min-width:110px;accent-color:#185FA5}
-select,input[type=number]{padding:6px 9px;border:1px solid rgba(0,0,0,.14);border-radius:8px;
-  font-size:12.5px;background:#fff;font-family:inherit;color:inherit}
-.val{font-size:12px;color:#2C2C2A;min-width:52px;text-align:right;font-variant-numeric:tabular-nums}
+/* ================= 判定 ================= */
+#verdict{
+  flex:0 0 auto;padding:3px 16px 0;font-size:11px;line-height:1.45;
+  max-height:62px;overflow-y:auto;-webkit-overflow-scrolling:touch;z-index:1;
+}
+#verdict>div{
+  padding:6px 11px;border-radius:13px;margin-top:4px;font-weight:500;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.7);
+}
+#verdict .ok{background:var(--mint-l);color:#3E7A61}
+#verdict .warn{background:#FFF0E4;color:#B4693A}
+#verdict .bad{background:#FFE6E0;color:#A9442E}
+#verdict .alt{background:var(--butter-l);color:#96702A}
+#verdict .dup{background:var(--lilac-l);color:#6A5B93}
 
-.btn{padding:7px 13px;border:1px solid rgba(0,0,0,.14);border-radius:8px;background:#fff;
-  font-size:12.5px;cursor:pointer;font-family:inherit;transition:.12s}
-.btn:hover{background:#F1EFE8}
-.btn:disabled{opacity:.4;cursor:not-allowed}
+/* ================= 工具条 ================= */
+.tools{
+  flex:0 0 auto;display:grid;grid-template-columns:repeat(5,1fr);
+  gap:6px;padding:7px 14px 7px;z-index:1;
+}
+.tools button{
+  background:rgba(255,255,255,.92);border-radius:15px;
+  padding:8px 0 7px;font-size:11px;font-weight:600;color:var(--ink-2);
+  box-shadow:var(--shadow),inset 0 0 0 1px var(--line);
+  transition:transform .1s cubic-bezier(.34,1.56,.64,1),background .12s;
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+}
+.tools button:active{transform:scale(.92);background:var(--card-2)}
+.tools button svg{width:15px;height:15px;opacity:.72}
 
-/* 珠材库 */
-.lib{display:grid;grid-template-columns:repeat(auto-fill,minmax(78px,1fr));gap:8px;
-  max-height:320px;overflow-y:auto;padding:2px}
-.bead{border-radius:10px;cursor:pointer;display:flex;flex-direction:column;
-  align-items:center;justify-content:center;gap:4px;padding:8px 4px;transition:.12s;
-  border:1px solid rgba(0,0,0,.07);background:#fff}
-.bead:hover{transform:scale(1.05);border-color:#185FA5}
-.bead .dot{width:26px;height:26px;border-radius:50%;
-  background:radial-gradient(circle at 32% 28%,rgba(255,255,255,.9),transparent 45%)}
-.bead .nm{font-size:11px;color:#444;text-align:center;line-height:1.3}
-.bead .pr{font-size:10px;color:#888780}
-.bead .add{font-size:10px;color:#185FA5;background:#E6F1FB;border-radius:4px;padding:1px 6px}
+/* ================= 珠材库 ================= */
+.dock{
+  flex:0 0 auto;position:relative;z-index:2;
+  background:rgba(255,255,255,.94);
+  border-radius:var(--r-lg) var(--r-lg) 0 0;
+  box-shadow:0 -6px 24px rgba(214,164,136,.13);
+  backdrop-filter:blur(12px);
+}
+.docktop{display:flex;align-items:center;justify-content:space-between;padding:9px 16px 0;gap:10px}
+.docklabel{
+  font-size:10px;color:var(--ink-3);letter-spacing:.12em;flex:0 0 auto;
+  display:flex;align-items:center;gap:4px;
+}
+.docklabel::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--peach)}
+.sizerow{display:flex;gap:5px}
+.docktools{display:flex;align-items:center;gap:6px}
+.tabbtn{
+  border-radius:999px;padding:4px 12px;font-size:10.5px;font-weight:800;
+  color:var(--ink-3);background:var(--card-2);
+  box-shadow:inset 0 0 0 1px var(--line);transition:.14s;white-space:nowrap;
+}
+.tabbtn.on{
+  background:linear-gradient(160deg,#D6C7F2,#A98FD6);color:#fff;
+  box-shadow:0 3px 9px rgba(169,143,214,.34);
+}
+.bead.acc{background:linear-gradient(180deg,#FFFFFF,#FBF8FF)}
+.bead.acc .add{color:#7E62AC;background:#F0EBFB}
+.sizerow button{
+  border-radius:999px;padding:4px 10px;font-size:10.5px;font-weight:600;
+  color:var(--ink-3);background:var(--card-2);
+  box-shadow:inset 0 0 0 1px var(--line);
+  font-variant-numeric:tabular-nums;transition:.14s;
+}
+.sizerow button.on{
+  background:linear-gradient(160deg,#FFB79F,var(--peach-d));color:#fff;
+  box-shadow:0 3px 9px rgba(245,138,110,.34);
+}
+.lib{
+  display:flex;gap:9px;overflow-x:auto;padding:9px 16px 13px;
+  scrollbar-width:none;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity;
+}
+.lib::-webkit-scrollbar{display:none}
+.bead{
+  flex:0 0 auto;width:64px;scroll-snap-align:start;
+  background:var(--card);border-radius:var(--r-md);
+  padding:8px 4px 7px;
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  box-shadow:var(--shadow),inset 0 0 0 1px var(--line);
+  transition:transform .12s cubic-bezier(.34,1.56,.64,1),box-shadow .15s;
+}
+.bead:active{transform:scale(.93);box-shadow:0 1px 5px rgba(214,164,136,.2)}
+.bead .dot{
+  width:30px;height:30px;border-radius:50%;position:relative;
+  background-size:cover;background-position:center;
+  background-color:#F4F1EC;
+  box-shadow:0 1px 4px rgba(120,90,70,.18);
+}
+/* 白水晶本身就是白的，图上没有轮廓，补一圈内描边才看得见 */
+.bead .dot::after{
+  content:"";position:absolute;inset:0;border-radius:50%;
+  box-shadow:inset 0 0 0 1px rgba(160,140,125,.38);
+  pointer-events:none;
+}
+.bead .nm{font-size:9.5px;color:var(--ink-2);font-weight:600;text-align:center;
+  line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.bead .pr{font-size:8.5px;color:var(--ink-3);font-variant-numeric:tabular-nums}
+.bead .add{
+  font-size:8.5px;font-weight:700;color:var(--peach-d);
+  background:var(--peach-l);border-radius:999px;padding:1px 8px;
+}
 
-/* 序列条 */
-.seq{display:flex;flex-wrap:wrap;gap:5px;min-height:64px;padding:10px;background:#F7F6F2;
-  border-radius:10px;align-content:flex-start}
-.slot{position:relative;cursor:grab;flex-shrink:0;border-radius:50%;
-  border:1px solid rgba(0,0,0,.08);transition:transform .1s}
-.slot:active{cursor:grabbing}
-.slot.drag{opacity:.35}
-.slot.sel{box-shadow:0 0 0 2px #185FA5;z-index:2}
-.slot.over{transform:scale(1.18);box-shadow:0 0 0 2px #D97706}
-.slot .idx{position:absolute;bottom:-13px;left:50%;transform:translateX(-50%);
-  font-size:9px;color:#888780;font-variant-numeric:tabular-nums}
-.slot .del{position:absolute;top:-6px;right:-6px;width:15px;height:15px;border-radius:50%;
-  background:#B91C1C;color:#fff;font-size:10px;line-height:15px;text-align:center;
-  opacity:0;transition:.1s;cursor:pointer}
-.slot:hover .del{opacity:1}
+/* ================= 价格 & 主按钮 ================= */
+.paybar{
+  flex:0 0 auto;display:flex;align-items:center;gap:11px;
+  padding:9px 16px calc(10px + env(safe-area-inset-bottom));
+  background:rgba(255,255,255,.96);border-top:1px solid rgba(198,158,132,.14);
+  z-index:2;
+}
+.pricel{font-size:9px;color:var(--ink-3);letter-spacing:.12em}
+.pricel::before{
+  content:"";display:inline-block;width:4px;height:4px;border-radius:50%;
+  background:var(--peach);margin-right:4px;vertical-align:1px;
+}
+.pricev{
+  font-size:24px;font-weight:800;line-height:1.05;letter-spacing:-.02em;
+  font-variant-numeric:tabular-nums;
+  background:linear-gradient(160deg,#FF9C7F,#E9714F);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+.pricev em{font-style:normal;font-size:14px;font-weight:700;margin-right:1px}
+.priced{
+  flex:1;min-width:0;font-size:9.5px;color:var(--ink-3);line-height:1.35;
+  text-align:right;overflow:hidden;max-height:2.6em;
+}
+.cta{
+  flex:0 0 auto;border-radius:999px;padding:12px 18px;
+  font-size:13px;font-weight:800;letter-spacing:.02em;color:#fff;
+  background:linear-gradient(160deg,#FFB49B,#F07F5E);
+  box-shadow:0 6px 16px rgba(240,127,94,.36),inset 0 1px 0 rgba(255,255,255,.42);
+  transition:transform .1s cubic-bezier(.34,1.56,.64,1);
+}
+.cta:active{transform:scale(.95)}
 
-.info{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:#5F5E5A;padding:10px 0}
-.info b{color:#2C2C2A;font-weight:500;font-variant-numeric:tabular-nums}
-.warn{background:#FAEEDA;border:1px solid #FAC775;color:#854F0B;border-radius:8px;padding:9px 12px;
-  font-size:12px;margin-top:10px}
-.bad{background:#FCEBEB;border:1px solid #F7C1C1;color:#A32D2D;border-radius:8px;padding:9px 12px;
-  font-size:12px;margin-top:10px;font-weight:600}
-.ok{background:#E1F5EE;border:1px solid #9FE1CB;color:#0F6E56;border-radius:8px;padding:9px 12px;
-  font-size:12px;margin-top:10px}
-.alt{background:#F1EFE8;border:1px solid #D3D1C7;color:#5F5E5A;border-radius:8px;padding:9px 12px;
-  font-size:12px;margin-top:10px}
-.quote{font-size:22px;color:#185FA5;font-variant-numeric:tabular-nums;font-weight:500}
-.dup{background:#FAEEDA;border:1px solid #FAC775;color:#854F0B;border-radius:8px;padding:9px 12px;
-  font-size:12px;margin-top:10px}
-.hint{font-size:11.5px;color:#888780;margin-top:8px;line-height:1.7}
-.bandwrap{margin-top:14px;padding-top:12px;border-top:1px solid rgba(0,0,0,.07)}
-.bandlabel{font-size:11.5px;color:#888780;margin-bottom:7px}
-.band{display:flex;height:30px;border-radius:8px;overflow:hidden;border:1px solid rgba(0,0,0,.1)}
-.band div{display:grid;place-items:center;font-size:11px;color:#fff;white-space:nowrap;
-  overflow:hidden;text-shadow:0 1px 2px rgba(0,0,0,.3)}
-.band.empty{background:#F7F6F2;color:#888780;display:grid;place-items:center;text-shadow:none}
-.sizepick{display:flex;gap:4px}
-.sizepick button{padding:4px 9px;border:1px solid rgba(0,0,0,.14);border-radius:6px;background:#fff;
-  font-size:11.5px;cursor:pointer;font-family:inherit}
-.sizepick button.on{background:#185FA5;color:#fff;border-color:#185FA5}
+/* ================= 设置抽屉 ================= */
+.sheet{position:fixed;inset:0;z-index:70;visibility:hidden;pointer-events:none}
+.sheet.open{visibility:visible;pointer-events:auto}
+.sheetmask{position:absolute;inset:0;background:rgba(91,68,54,.32);opacity:0;transition:opacity .24s}
+.sheet.open .sheetmask{opacity:1}
+.sheetbody{
+  position:absolute;left:0;right:0;bottom:0;max-height:86dvh;overflow-y:auto;
+  background:linear-gradient(180deg,#FFFDF9,#FFF7EC);
+  border-radius:26px 26px 0 0;
+  padding:6px 16px calc(20px + env(safe-area-inset-bottom));
+  transform:translateY(100%);transition:transform .28s cubic-bezier(.22,.8,.3,1);
+  box-shadow:0 -10px 36px rgba(160,120,95,.22);
+  -webkit-overflow-scrolling:touch;
+}
+.sheet.open .sheetbody{transform:translateY(0)}
+@media(min-width:560px){.sheetbody{max-width:540px;margin:0 auto}}
+.grab{width:38px;height:4.5px;border-radius:3px;background:#E8D9CC;margin:9px auto 12px}
+.sheetclose{
+  position:absolute;top:12px;right:16px;z-index:2;
+  border-radius:999px;padding:5px 13px;font-size:11px;font-weight:600;
+  color:var(--ink-2);background:#fff;box-shadow:var(--shadow),inset 0 0 0 1px var(--line);
+}
+.grp{
+  background:var(--card);border-radius:var(--r-md);padding:14px 15px;margin-bottom:10px;
+  box-shadow:var(--shadow),inset 0 0 0 1px rgba(255,255,255,.8);
+}
+.grp h2{
+  font-size:10.5px;font-weight:800;color:var(--ink-3);letter-spacing:.1em;
+  margin-bottom:11px;display:flex;align-items:center;gap:6px;
+}
+.grp h2::before{content:"";width:6px;height:6px;border-radius:2px;background:var(--peach);transform:rotate(45deg)}
+.row{display:flex;align-items:center;gap:10px;margin-bottom:11px}
+.row:last-child{margin-bottom:0}
+.row label{font-size:11.5px;color:var(--ink-2);flex:0 0 auto;min-width:42px;font-weight:600}
+.row select{
+  flex:1;min-width:0;padding:8px 30px 8px 11px;border-radius:12px;
+  background:var(--card-2);font-size:13px;
+  box-shadow:inset 0 0 0 1px var(--line);
+  -webkit-appearance:none;appearance:none;
+  background-image:linear-gradient(45deg,transparent 50%,#C0A594 50%),linear-gradient(135deg,#C0A594 50%,transparent 50%);
+  background-position:calc(100% - 15px) 50%,calc(100% - 10px) 50%;
+  background-size:5px 5px,5px 5px;background-repeat:no-repeat;
+}
+input[type=range]{-webkit-appearance:none;appearance:none;flex:1;min-width:0;height:28px;background:transparent}
+input[type=range]::-webkit-slider-runnable-track{height:5px;border-radius:3px;
+  background:linear-gradient(90deg,var(--rose),var(--peach-l))}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:24px;height:24px;border-radius:50%;
+  background:#fff;box-shadow:0 2px 7px rgba(200,140,110,.36),inset 0 0 0 2.5px var(--peach);
+  margin-top:-9.5px;
+}
+input[type=range]::-moz-range-track{height:5px;border-radius:3px;background:var(--peach-l)}
+input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:#fff;border:2.5px solid var(--peach)}
+.val{font-size:12px;font-weight:700;color:var(--ink);min-width:48px;text-align:right;font-variant-numeric:tabular-nums;flex:0 0 auto}
+
+.hint{font-size:10px;color:var(--ink-3);line-height:1.6;margin-top:8px}
+.hint b{color:var(--ink-2);font-weight:700}
+
+.seq{display:flex;flex-wrap:wrap;gap:6px;padding:11px;background:var(--card-2);border-radius:14px;min-height:54px;align-content:flex-start}
+.slot{
+  position:relative;border-radius:50%;flex-shrink:0;
+  box-shadow:0 1px 4px rgba(120,90,70,.2);
+  display:grid;place-items:center;background-size:cover;background-position:center;
+  touch-action:manipulation;
+}
+.slot .idx{font-size:8.5px;color:#fff;text-shadow:0 1px 3px rgba(60,40,30,.7);pointer-events:none;font-weight:700}
+.slot .del{
+  position:absolute;top:-5px;right:-5px;width:17px;height:17px;border-radius:50%;
+  background:#F07F5E;color:#fff;font-size:12px;line-height:17px;text-align:center;
+  display:none;box-shadow:0 1px 4px rgba(240,127,94,.5);
+}
+.slot.sel{outline:2.5px solid var(--peach-d);outline-offset:1.5px}
+.slot.sel .del{display:block}
+.slot.over{outline:2.5px solid var(--butter);outline-offset:2px}
+
+.band{display:flex;height:26px;border-radius:11px;overflow:hidden;background:var(--card-2)}
+.band.empty{display:grid;place-items:center;font-size:10px;color:var(--ink-3)}
+.band>div{display:grid;place-items:center;font-size:8.5px;color:rgba(255,255,255,.96);
+  text-shadow:0 1px 2px rgba(0,0,0,.4);overflow:hidden;white-space:nowrap}
+
+.btnrow{display:flex;gap:7px;margin-top:11px}
+.btnrow button{
+  flex:1;border-radius:13px;padding:9px 0;font-size:12px;font-weight:700;color:var(--ink-2);
+  background:var(--card-2);box-shadow:inset 0 0 0 1px var(--line);
+}
+.btnrow button:active{background:var(--peach-l)}
+
+/* ================= 弹层 ================= */
+.modal{position:fixed;inset:0;z-index:90;display:grid;place-items:center;padding:18px}
+.modal .mask{position:absolute;inset:0;background:rgba(91,68,54,.36);backdrop-filter:blur(2px)}
+.modal-card{
+  position:relative;width:100%;max-width:400px;
+  background:linear-gradient(180deg,#FFFDFA,#FFF8EF);
+  border-radius:26px;padding:22px 20px 18px;
+  box-shadow:0 18px 50px rgba(120,80,60,.3);
+  max-height:86dvh;overflow-y:auto;
+  animation:pop .26s cubic-bezier(.34,1.4,.6,1);
+}
+@keyframes pop{from{transform:scale(.92);opacity:0}to{transform:scale(1);opacity:1}}
+.modal h2{font-size:17px;font-weight:800;text-align:center;letter-spacing:.02em}
+.modal .sub{font-size:11px;color:var(--ink-3);text-align:center;margin-top:4px;line-height:1.5}
+.modal .field{margin-top:13px}
+.modal .field label{display:block;font-size:11px;font-weight:700;color:var(--ink-2);margin-bottom:5px}
+.modal .field .req{
+  display:inline-block;font-size:9px;font-weight:800;color:#C0503A;
+  background:#FFE7E0;border-radius:6px;padding:1px 5px;margin-left:4px;vertical-align:1px;
+}
+.modal .field input{
+  width:100%;padding:11px 13px;border-radius:14px;font-size:14px;
+  background:#fff;box-shadow:inset 0 0 0 1.5px var(--line);outline:none;
+}
+.modal .field input:focus{box-shadow:inset 0 0 0 2px var(--peach)}
+.modal-actions{display:flex;gap:9px;margin-top:18px}
+.modal-actions button{flex:1;border-radius:999px;padding:12px 0;font-size:13px;font-weight:800}
+.btn-ghost{background:#fff;color:var(--ink-2);box-shadow:inset 0 0 0 1.5px var(--line)}
+.btn-main{color:#fff;background:linear-gradient(160deg,#FFB49B,#F07F5E);
+  box-shadow:0 6px 16px rgba(240,127,94,.34)}
+.btn-main:active{transform:scale(.97)}
+.err{font-size:11px;color:#C0503A;text-align:center;margin-top:10px;min-height:15px}
+
+.summary{
+  margin-top:14px;padding:13px;border-radius:16px;background:#fff;
+  box-shadow:inset 0 0 0 1px var(--line);
+}
+.summary .line{display:flex;justify-content:space-between;font-size:11.5px;padding:3px 0;color:var(--ink-2)}
+.summary .line b{color:var(--ink);font-weight:700}
+.summary .beads{display:flex;flex-wrap:wrap;gap:4px;margin-top:9px;padding-top:9px;border-top:1px dashed var(--line)}
+.summary .bd{flex:0 0 auto;width:16px;height:16px;border-radius:50%;background-size:cover;
+  box-shadow:0 1px 2px rgba(0,0,0,.14),inset 0 0 0 1px rgba(160,140,125,.35)}
+
+/* ================= 管理后台 ================= */
+.view.admin{background:linear-gradient(180deg,#FFFBF5,#FFF3E6)}
+.adminhdr{flex:0 0 auto;display:flex;align-items:center;gap:10px;padding:12px 16px 10px}
+.adminhdr h1{font-size:16px;font-weight:800;flex:1;letter-spacing:.02em;text-align:center}
+.abtn{
+  border-radius:999px;padding:7px 13px;font-size:11.5px;font-weight:700;color:var(--ink-2);
+  background:#fff;box-shadow:var(--shadow),inset 0 0 0 1px var(--line);
+}
+.abtn:active{background:var(--card-2)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:0 16px 4px;flex:0 0 auto}
+.stat{
+  background:#fff;border-radius:16px;padding:10px 8px;text-align:center;
+  box-shadow:var(--shadow),inset 0 0 0 1px var(--line);
+}
+.stat .n{font-size:19px;font-weight:800;color:var(--ink);font-variant-numeric:tabular-nums;line-height:1.15}
+.stat .l{font-size:9.5px;color:var(--ink-3);letter-spacing:.06em;margin-top:2px}
+.stat.p .n{color:#E7A03C}
+.stat.a .n{color:#3E9A76}
+.adminbar{flex:0 0 auto;padding:10px 16px 6px}
+.search{
+  display:flex;align-items:center;gap:8px;background:#fff;border-radius:999px;
+  padding:9px 14px;box-shadow:var(--shadow),inset 0 0 0 1px var(--line);
+}
+.search svg{width:15px;height:15px;color:var(--ink-3);flex:0 0 auto}
+.search input{border:none;outline:none;background:none;flex:1;font-size:13px;min-width:0}
+.chips{display:flex;gap:6px;padding:8px 16px 6px;overflow-x:auto;scrollbar-width:none;flex:0 0 auto}
+.chips::-webkit-scrollbar{display:none}
+.chip{
+  flex:0 0 auto;border-radius:999px;padding:6px 13px;font-size:11px;font-weight:700;
+  color:var(--ink-3);background:#fff;box-shadow:inset 0 0 0 1px var(--line);transition:.14s;
+}
+.chip.on{background:linear-gradient(160deg,#FFB79F,var(--peach-d));color:#fff;box-shadow:0 3px 9px rgba(245,138,110,.3)}
+.orderlist{flex:1 1 auto;min-height:0;overflow-y:auto;padding:4px 16px calc(20px + env(safe-area-inset-bottom));-webkit-overflow-scrolling:touch}
+.ordercard{
+  background:#fff;border-radius:18px;padding:13px 14px;margin-bottom:9px;
+  box-shadow:var(--shadow),inset 0 0 0 1px var(--line);
+}
+.oc-top{display:flex;align-items:center;gap:8px}
+.oc-id{font-size:12px;font-weight:800;letter-spacing:.02em;font-variant-numeric:tabular-nums}
+.oc-time{font-size:9.5px;color:var(--ink-3);margin-left:auto}
+.tag{border-radius:999px;padding:2px 8px;font-size:9px;font-weight:800;letter-spacing:.03em}
+.tag.p{background:var(--butter-l);color:#A87B22}
+.tag.a{background:var(--mint-l);color:#3E7A61}
+.oc-mid{display:flex;align-items:center;gap:10px;margin-top:9px}
+.oc-beads{display:flex;flex-wrap:wrap;gap:3px;flex:1;min-width:0}
+.oc-beads .bd{flex:0 0 auto;width:13px;height:13px;border-radius:50%;background-size:cover;
+  box-shadow:0 1px 2px rgba(0,0,0,.13),inset 0 0 0 1px rgba(160,140,125,.35)}
+.oc-price{font-size:15px;font-weight:800;color:var(--peach-d);font-variant-numeric:tabular-nums}
+.oc-meta{font-size:10px;color:var(--ink-3);margin-top:7px;line-height:1.5}
+.oc-acts{display:flex;gap:6px;margin-top:10px}
+.oc-acts button{
+  flex:1;border-radius:11px;padding:7px 0;font-size:11px;font-weight:700;
+  background:var(--card-2);color:var(--ink-2);box-shadow:inset 0 0 0 1px var(--line);
+}
+.oc-acts button.danger{color:#C0503A;background:#FFF0EC}
+.oc-acts button.ok{color:#3E7A61;background:var(--mint-l)}
+.emptybox{text-align:center;padding:46px 20px;color:var(--ink-3)}
+.emptybox .emo{font-size:34px;margin-bottom:10px;opacity:.85}
+.emptybox p{font-size:12px;line-height:1.6}
+
+/* toast */
+.toast{
+  position:fixed;left:50%;bottom:110px;transform:translate(-50%,16px);
+  background:rgba(91,68,54,.94);color:#fff;border-radius:999px;
+  padding:11px 22px;font-size:12.5px;font-weight:700;letter-spacing:.02em;
+  opacity:0;pointer-events:none;transition:all .3s cubic-bezier(.34,1.4,.6,1);z-index:120;
+  box-shadow:0 8px 24px rgba(60,40,30,.3);white-space:nowrap;max-width:88vw;overflow:hidden;text-overflow:ellipsis;
+}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.ghostbead{
+  position:fixed;z-index:150;pointer-events:none;
+  border-radius:50%;background-size:cover;background-position:center;
+  box-shadow:0 8px 22px rgba(160,120,95,.42),inset 0 0 0 1px rgba(160,140,125,.35);
+  transform:translate(-50%,-50%) scale(1.08);opacity:.94;
+  transition:opacity .12s;
+}
+.ghostbead.drop{box-shadow:0 0 0 3px rgba(255,169,143,.7),0 8px 22px rgba(160,120,95,.42)}
+
+/* ================= 首页（登录/入口页） ================= */
+.view.home{position:relative;overflow:hidden}
+.view.home::before{
+  content:"";position:absolute;left:-70px;top:-40px;width:220px;height:220px;border-radius:50%;
+  background:radial-gradient(circle at 40% 40%,rgba(255,216,131,.45),rgba(255,216,131,0) 70%);
+}
+.view.home::after{
+  content:"";position:absolute;right:-80px;bottom:120px;width:240px;height:240px;border-radius:50%;
+  background:radial-gradient(circle at 55% 45%,rgba(207,192,238,.38),rgba(207,192,238,0) 72%);
+}
+.homebody{
+  position:relative;z-index:1;flex:1 1 auto;min-height:0;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:0 26px;text-align:center;
+}
+.homeart{width:min(62vw,230px);margin-bottom:18px;filter:drop-shadow(0 10px 22px rgba(214,164,136,.28))}
+.home-t{
+  font-size:27px;font-weight:800;letter-spacing:.06em;line-height:1.25;
+  background:linear-gradient(150deg,#7A5342,#C1735A);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+.home-s{font-size:12.5px;color:var(--ink-3);letter-spacing:.14em;margin-top:9px}
+.homeacts{width:100%;max-width:300px;margin-top:34px;display:flex;flex-direction:column;gap:11px}
+.homebtn{
+  width:100%;border-radius:999px;padding:15px 0;font-size:15px;font-weight:800;letter-spacing:.06em;
+  background:linear-gradient(160deg,#FFB49B,#F07F5E);color:#fff;
+  box-shadow:0 8px 20px rgba(240,127,94,.34),inset 0 1px 0 rgba(255,255,255,.42);
+  transition:transform .1s cubic-bezier(.34,1.56,.64,1);
+}
+.homebtn:active{transform:scale(.96)}
+.homebtn.ghost{
+  background:#fff;color:var(--ink-2);
+  box-shadow:0 3px 12px rgba(214,164,136,.16),inset 0 0 0 1.5px var(--line);
+}
+.homefoot{
+  position:relative;z-index:1;flex:0 0 auto;text-align:center;
+  padding:0 20px calc(22px + env(safe-area-inset-bottom));
+}
+.homefoot button{font-size:11px;color:var(--ink-3);letter-spacing:.06em;padding:8px 14px}
+.homefoot .dotline{font-size:10px;color:var(--ink-3);opacity:.7;margin-top:2px}
+
+/* ================= 顶部两个大按钮 ================= */
+.bigbar{
+  flex:0 0 auto;display:grid;grid-template-columns:1fr 1fr;gap:8px;
+  padding:2px 14px 7px;position:relative;z-index:2;
+}
+.bigbtn{
+  border-radius:14px;padding:11px 6px;font-size:12px;font-weight:700;letter-spacing:.01em;
+  background:#fff;color:var(--ink-2);
+  box-shadow:0 3px 12px rgba(214,164,136,.16),inset 0 0 0 1px var(--line);
+  display:flex;align-items:center;justify-content:center;gap:5px;
+  transition:transform .1s cubic-bezier(.34,1.56,.64,1),background .12s;
+}
+.bigbtn:active{transform:scale(.95);background:var(--card-2)}
+.bigbtn svg{width:15px;height:15px;opacity:.75;flex:0 0 auto}
+.backbtn{
+  width:34px;height:34px;border-radius:12px;background:rgba(255,255,255,.86);
+  box-shadow:var(--shadow),inset 0 0 0 1px var(--line);
+  display:grid;place-items:center;color:var(--ink-2);flex:0 0 auto;
+}
+.backbtn:active{transform:scale(.92)}
+.backbtn svg{width:16px;height:16px}
+
+/* ================= 我的订单 ================= */
+.view.orders{background:linear-gradient(180deg,#FFFBF5,#FFF3E6)}
+.oq{padding:6px 16px 4px;flex:0 0 auto}
+.oqbox{
+  display:flex;gap:8px;background:#fff;border-radius:999px;padding:6px 6px 6px 16px;
+  box-shadow:var(--shadow),inset 0 0 0 1px var(--line);
+}
+.oqbox input{
+  flex:1;min-width:0;border:none;outline:none;background:none;font-size:14px;letter-spacing:.04em;
+}
+.oqbox button{
+  flex:0 0 auto;border-radius:999px;padding:9px 18px;font-size:12.5px;font-weight:800;color:#fff;
+  background:linear-gradient(160deg,#FFB49B,#F07F5E);
+  box-shadow:0 4px 12px rgba(240,127,94,.3);
+}
+.oqbox button:active{transform:scale(.96)}
+.myorders{flex:1 1 auto;min-height:0;overflow-y:auto;padding:8px 16px calc(22px + env(safe-area-inset-bottom));-webkit-overflow-scrolling:touch}
+
+/* ================= 手串详情 ================= */
+.spec{padding:2px 0}
+.spec-row{
+  display:flex;justify-content:space-between;align-items:baseline;gap:12px;
+  padding:9px 0;border-bottom:1px dashed rgba(198,158,132,.2);font-size:12px;color:var(--ink-2);
+}
+.spec-row:last-child{border-bottom:none}
+.spec-row b{color:var(--ink);font-weight:800;font-variant-numeric:tabular-nums}
+.spec-title{
+  font-size:10.5px;font-weight:800;color:var(--ink-3);letter-spacing:.1em;
+  margin:14px 0 2px;display:flex;align-items:center;gap:6px;
+}
+.spec-title::before{content:"";width:6px;height:6px;border-radius:2px;background:var(--peach);transform:rotate(45deg)}
+.spec-beads{display:flex;flex-wrap:wrap;gap:5px;padding:10px 0 2px}
+.spec-beads .bd{
+  flex:0 0 auto;width:18px;height:18px;border-radius:50%;background-size:cover;
+  box-shadow:0 1px 2px rgba(0,0,0,.14),inset 0 0 0 1px rgba(160,140,125,.35);
+}
+
+/* ================= 健康度标签 ================= */
+.hp{
+  position:absolute;top:2px;left:12px;z-index:3;
+  display:inline-flex;align-items:center;gap:5px;
+  border-radius:999px;padding:4px 11px;font-size:10.5px;font-weight:800;letter-spacing:.03em;
+  box-shadow:0 2px 8px rgba(160,120,95,.16);
+  transition:background .2s,color .2s;
+}
+.hp::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.85}
+.hp.ok{background:#DFF3E8;color:#2F7D5C}
+.hp.warn{background:#FFF1D4;color:#A87B22}
+.hp.bad{background:#FFE3DB;color:#B04A32}
+
+/* ================= 店主形象（莎傻） ================= */
+.homehero{position:relative;display:grid;place-items:center;margin-bottom:10px}
+.homehero .sasa{
+  height:min(33vh,250px);width:auto;max-width:78vw;object-fit:contain;
+  filter:drop-shadow(0 14px 26px rgba(214,164,136,.30));
+  animation:floaty 4.2s ease-in-out infinite;
+}
+@keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.homehero .halo{
+  position:absolute;width:min(60vw,210px);height:min(60vw,210px);border-radius:50%;
+  background:radial-gradient(circle,rgba(255,255,255,.95),rgba(255,240,226,.5) 58%,rgba(255,240,226,0) 74%);
+  z-index:-1;
+}
+.sasa-avatar{
+  width:100%;height:100%;border-radius:inherit;object-fit:cover;display:block;
+}
+.brand .mark img{width:100%;height:100%;border-radius:inherit;object-fit:cover;display:block}
+.sasa-tip{
+  display:flex;align-items:flex-start;gap:9px;margin-top:12px;
+  background:#fff;border-radius:16px;padding:10px 12px;
+  box-shadow:0 3px 12px rgba(214,164,136,.16),inset 0 0 0 1px var(--line);
+  text-align:left;
+}
+.sasa-tip img{width:34px;height:34px;border-radius:50%;object-fit:cover;flex:0 0 auto;
+  box-shadow:inset 0 0 0 1px rgba(160,140,125,.25)}
+.sasa-tip .t{font-size:11px;line-height:1.55;color:var(--ink-2)}
+.sasa-tip .t b{color:var(--ink);font-weight:800}
+.emptybox .sasa-mini{width:76px;height:auto;margin-bottom:8px;display:inline-block;
+  filter:drop-shadow(0 6px 14px rgba(214,164,136,.22))}
+
+
 </style>
 </head>
 <body>
-<div class="wrap">
 
-<div class="banner">
-  <h3>浏览器版演示 · 混搭珠径 · 画布直接拖动</h3>
-  <p><b>这不是小程序本体</b>：同一套算法与交互逻辑的网页版，用于在不安包装微信开发者工具的情况下先试手感。
-  小程序工程（WXML/WXSS）在本仓库根目录，用微信开发者工具导入即可。</p>
-  <p style="margin-top:6px"><b>尺寸算法</b>：支持不同珠径混搭。「腕围÷珠径=颗数」只在等径时成立，此处按<b>闭环方程
-  Σ2·arcsin(chord/2Rc)=2π</b> 数值求解；等径时与闭式解偏差 &lt; 1e-13 mm（完全等价）。</p>
-  <p style="margin-top:6px"><b>怎么玩</b>：点珠材库一次 = 加一颗；在珠串上<b>直接拖动</b>珠子可重排 / 互调；
-  拖到两颗之间可插入；选中珠子后可替换材质或珠径，点右上角红点删除。</p>
-  <p style="margin-top:6px"><b>网页版验不了</b>：低端安卓机 Canvas 帧率、真机 wx API、包体积 2MB 限制、审核结果——这些只能真机或开发者工具确认。</p>
-</div>
-
-<div class="grid">
-<div>
-
-<div class="card">
-  <h2><span class="n">1</span>预览 · 直接拖动珠子<span class="tag" id="canvasTag">拖动重排 · 拖到别珠上互调</span></h2>
-  <div class="stage"><canvas id="cv" width="520" height="520"></canvas></div>
-  <div class="info" id="info"></div>
-  <div id="verdict"></div>
-</div>
-
-<div class="card">
-  <h2><span class="n">2</span>排列顺序<span class="tag">点选定位 · 拖动重排</span></h2>
-  <div class="seq" id="seq"></div>
-  <div class="row" style="margin-top:14px">
-    <button class="btn" id="bMirror">一键对称</button>
-    <button class="btn" id="bGrad">一键渐变</button>
-    <button class="btn" id="bRand">随机</button>
-    <button class="btn" id="bFit">按腕围补满</button>
-    <button class="btn" id="bReset">清空</button>
-  </div>
-  <div class="hint">珠子圆点大小 = 真实珠径比例（8/10/12/14mm）。悬停出现红色 × 删除该颗。</div>
-  <div class="bandwrap">
-    <div class="bandlabel">随机成品（打开页面已自动配好一条，可点按钮换一条）</div>
-    <div class="row" style="margin-bottom:0">
-      <button class="btn" id="bPreset">🎲 换一条成品</button>
-      <span class="hint" id="presetHint" style="margin:0"></span>
+<!-- ============ 首页 ============ -->
+<div class="view home" id="viewHome">
+  <div class="homebody">
+    <div class="homehero">
+      <div class="halo"></div>
+      <img class="sasa" src="assets/sasa/hero.png" alt="店主莎傻">
+    </div>
+    <div class="home-t">水晶手串</div>
+    <div class="home-s">莎傻陪你捏一条只属于你的</div>
+    <div class="sasa-tip">
+      <img src="assets/sasa/avatar.png" alt="">
+      <div class="t"><b>莎傻</b>：挑珠子丢进环里，我帮你算松紧和价位～</div>
+    </div>
+    <div class="homeacts">
+      <button class="homebtn" id="goCustom">开始定制</button>
+      <button class="homebtn ghost" id="goOrders">我的订单</button>
     </div>
   </div>
-  <div class="bandwrap">
-    <div class="bandlabel">色带分段（每种珠材占一整段，段段单向推进 = 真渐变）</div>
-    <div id="bands"></div>
-    <div class="hint" id="bandHint"></div>
+  <div class="homefoot">
+    <button id="goAdminHome">店主入口</button>
+    <div class="dotline">挑珠 · 定尺寸 · 实时预览</div>
   </div>
 </div>
 
-</div>
+<!-- ============ 客户视图 ============ -->
+<div class="view shop" id="viewShop">
+  <header class="hdr">
+    <button class="backbtn" id="shopBack" aria-label="返回首页">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5.5L8 12l6.5 6.5"/></svg>
+    </button>
+    <div class="brand" style="flex:1">
+      <span class="mark"><img src="assets/sasa/avatar.png" alt="莎傻"></span>
+      <div>
+        <h1>莎傻的配珠台</h1>
+        <p>挑珠 · 拖动 · 定价</p>
+      </div>
+    </div>
+    <button class="iconbtn" id="btnAdmin" aria-label="店主入口">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 3l7.5 3v5.2c0 4.4-3 8.3-7.5 9.8-4.5-1.5-7.5-5.4-7.5-9.8V6z"/>
+        <path d="M9.4 12.1l1.9 1.9 3.5-3.7"/>
+      </svg>
+    </button>
+  </header>
 
-<div>
-
-<div class="card">
-  <h2><span class="n">3</span>尺寸</h2>
-  <div class="row"><label>手腕围</label><input type="range" id="wrist" min="140" max="200" value="165"><span class="val" id="wristV">165mm</span></div>
-  <div class="row"><label>松紧</label>
-    <select id="fit"><option value="6">偏紧</option><option value="12" selected>标准</option><option value="15">偏松</option></select>
-    <label style="min-width:auto">绳材</label>
-    <select id="cord"><option value="elastic" selected>弹力线</option><option value="wax">蜡绳活结</option></select>
+  <div class="bigbar">
+    <button class="bigbtn" id="btnSheet">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg>
+      设置手串尺寸及线材
+    </button>
+    <button class="bigbtn" id="btnSpec">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.2"/><path d="M12 11.2v5.2"/><circle cx="12" cy="8.2" r=".9" fill="currentColor"/></svg>
+      手串详情
+    </button>
   </div>
-  <div class="row"><label>新加珠径</label><div class="sizepick" id="sizePick"></div></div>
-  <div class="hint" id="sizeHint"></div>
-  <div class="hint" id="cordHint"></div>
+
+  <div class="stagewrap">
+    <canvas id="cv"></canvas>
+    <div class="hp" id="hp" hidden></div>
+    <div id="canvasTag">拖动重排 · 拖到别珠上互调</div>
+    <div id="info"></div>
+  </div>
+
+  <div id="verdict"></div>
+
+  <div class="tools">
+    <button id="bMirror"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 3v18"/><path d="M8 7L4 12l4 5"/><path d="M16 7l4 5-4 5"/></svg>对称</button>
+    <button id="bGrad"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 16c4 0 4-8 8-8s4 8 8 8"/></svg>渐变</button>
+    <button id="bRand"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="8.6" cy="8.6" r="1.1" fill="currentColor"/><circle cx="15.4" cy="15.4" r="1.1" fill="currentColor"/><circle cx="12" cy="12" r="1.1" fill="currentColor"/></svg>随机</button>
+    <button id="bFit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="7"/><path d="M12 8.5v7M8.5 12h7"/></svg>补满</button>
+    <button id="bReset"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9.5 7V5.2A1.2 1.2 0 0 1 10.7 4h2.6a1.2 1.2 0 0 1 1.2 1.2V7"/><path d="M6.5 7l.8 12.2A1.6 1.6 0 0 0 8.9 20.7h6.2a1.6 1.6 0 0 0 1.6-1.5L17.5 7"/></svg>清空</button>
+  </div>
+
+  <div class="dock">
+    <div class="docktop">
+      <span class="docklabel" id="libLabel">珠材库</span>
+      <div class="docktools">
+        <button class="tabbtn" id="tabAcc">配件</button>
+        <div class="sizerow" id="sizePick"></div>
+      </div>
+    </div>
+    <div class="lib" id="lib"></div>
+  </div>
+
+  <div class="paybar">
+    <div>
+      <div class="pricel">合计</div>
+      <div class="pricev"><em>¥</em><span id="price">0</span></div>
+    </div>
+    <div class="priced" id="priceD"></div>
+    <button class="cta" id="btnConfirm">确认并推送</button>
+  </div>
 </div>
 
-<div class="card">
-  <h2><span class="n">4</span>报价</h2>
-  <div class="quote" id="price">¥0</div>
-  <div class="hint" id="priceD"></div>
+<!-- ============ 设置抽屉 ============ -->
+<div class="sheet" id="sheet">
+  <div class="sheetmask" id="sheetMask"></div>
+  <div class="sheetbody">
+    <button class="sheetclose" id="sheetClose">收起</button>
+    <div class="grab"></div>
+
+    <div class="grp">
+      <h2>尺寸</h2>
+      <div class="row">
+        <label>手腕围</label>
+        <input type="range" id="wrist" min="140" max="200" value="165">
+        <span class="val" id="wristV">165mm</span>
+      </div>
+      <div class="row">
+        <label>松紧</label>
+        <select id="fit">
+          <option value="6">偏紧</option>
+          <option value="12" selected>标准</option>
+          <option value="15">偏松</option>
+        </select>
+        <label style="min-width:auto">绳材</label>
+        <select id="cord">
+          <option value="elastic" selected>弹力线</option>
+          <option value="wax">蜡绳活结</option>
+        </select>
+      </div>
+      <div class="hint" id="cordHint"></div>
+      <div class="hint" id="sizeHint"></div>
+    </div>
+
+    <div class="grp">
+      <h2>排列顺序</h2>
+      <div class="seq" id="seq"></div>
+      <div class="hint">点一下选中（出现红 ×），再点珠材库即替换材质/珠径。拖动画布上的珠子也能重排。</div>
+    </div>
+
+    <div class="grp">
+      <h2>色带分段</h2>
+      <div class="band" id="bands"></div>
+      <div class="hint" id="bandHint"></div>
+      <div class="btnrow"><button id="bPreset">换一条成品</button></div>
+      <div class="hint" id="presetHint"></div>
+    </div>
+  </div>
 </div>
 
-<div class="card">
-  <h2><span class="n">5</span>珠材库<span class="tag">点一次 = 加一颗</span></h2>
-  <div class="lib" id="lib"></div>
-  <div class="hint">点击加入一颗（按上方选定珠径）。要换成别的材质或大小：<b>先点预览里或序列条上的那颗珠子</b>选中，再点珠材库即替换。</div>
+<!-- ============ 确认订单 ============ -->
+<div class="modal" id="modalConfirm" hidden>
+  <div class="mask" id="cfMask"></div>
+  <div class="modal-card">
+    <h2>这条手串，喜欢吗？</h2>
+    <p class="sub">确认后会推送给店主，她来跟你核对细节</p>
+
+    <div class="summary">
+      <div class="line"><span>颗数</span><b id="cfN">0 颗</b></div>
+      <div class="line"><span>手围 / 绳材</span><b id="cfSize">—</b></div>
+      <div class="line"><span>参考金额</span><b id="cfPrice">¥0</b></div>
+      <div class="beads" id="cfBeads"></div>
+    </div>
+
+    <div class="field">
+      <label>手机号 <span class="req">必填</span></label>
+      <input id="cfPhone" type="tel" inputmode="numeric" maxlength="11"
+             placeholder="11 位手机号，店主电话联系你" autocomplete="tel">
+    </div>
+    <div class="field">
+      <label>怎么称呼你（选填）</label>
+      <input id="cfName" maxlength="24" placeholder="方便店主称呼你" autocomplete="off">
+    </div>
+    <div class="field">
+      <label>想说的话（选填）</label>
+      <input id="cfNote" maxlength="120" placeholder="比如：想要松一点、送人" autocomplete="off">
+    </div>
+
+    <div class="err" id="cfErr"></div>
+
+    <div class="modal-actions">
+      <button class="btn-ghost" id="cfCancel">再改改</button>
+      <button class="btn-main" id="cfSubmit">确认并推送</button>
+    </div>
+  </div>
 </div>
 
+<!-- ============ 店主登录 ============ -->
+<div class="modal" id="modalLogin" hidden>
+  <div class="mask" id="lgMask"></div>
+  <div class="modal-card">
+    <div style="text-align:center;margin-bottom:6px">
+      <img src="assets/sasa/avatar.png" alt="莎傻"
+           style="width:64px;height:64px;border-radius:50%;object-fit:cover;
+                  box-shadow:0 6px 16px rgba(214,164,136,.3),inset 0 0 0 2px #fff">
+    </div>
+    <h2>莎傻的后台</h2>
+    <p class="sub">这里能看到客人的订单</p>
+    <div class="field">
+      <label>账号</label>
+      <input id="lgUser" autocomplete="username" placeholder="账号">
+    </div>
+    <div class="field">
+      <label>密码</label>
+      <input id="lgPass" type="password" autocomplete="current-password" placeholder="密码">
+    </div>
+    <div class="err" id="lgErr"></div>
+    <div class="modal-actions">
+      <button class="btn-ghost" id="lgCancel">返回</button>
+      <button class="btn-main" id="lgSubmit">进入</button>
+    </div>
+  </div>
 </div>
+
+<!-- ============ 订单管理 ============ -->
+<div class="view admin" id="viewAdmin" hidden>
+  <div class="adminhdr">
+    <button class="abtn" id="adBack">← 配珠</button>
+    <h1>订单管理</h1>
+    <button class="abtn" id="adLogout">退出</button>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="n" id="stAll">0</div><div class="l">全部</div></div>
+    <div class="stat p"><div class="n" id="stPend">0</div><div class="l">待处理</div></div>
+    <div class="stat a"><div class="n" id="stArch">0</div><div class="l">已归档</div></div>
+  </div>
+
+  <div class="adminbar">
+    <div class="search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/></svg>
+      <input id="adSearch" placeholder="搜订单号 / 珠材 / 客户 / 备注" autocomplete="off">
+    </div>
+  </div>
+  <div class="chips" id="adStatus">
+    <button class="chip on" data-v="all">全部状态</button>
+    <button class="chip" data-v="pending">待处理</button>
+    <button class="chip" data-v="archived">已归档</button>
+  </div>
+  <div class="chips" id="adRange">
+    <button class="chip on" data-v="all">不限时间</button>
+    <button class="chip" data-v="today">今天</button>
+    <button class="chip" data-v="7d">近 7 天</button>
+    <button class="chip" data-v="30d">近 30 天</button>
+  </div>
+
+  <div class="orderlist" id="adList"></div>
 </div>
+
+<!-- ============ 订单详情 ============ -->
+<div class="modal" id="modalDetail" hidden>
+  <div class="mask" id="dtMask"></div>
+  <div class="modal-card">
+    <h2 id="dtTitle">订单详情</h2>
+    <p class="sub" id="dtSub"></p>
+    <div class="summary" id="dtBody"></div>
+    <div class="modal-actions">
+      <button class="btn-main" id="dtClose">知道了</button>
+    </div>
+  </div>
 </div>
+
+<!-- ============ 我的订单（顾客侧） ============ -->
+<div class="view orders" id="viewMyOrders" hidden>
+  <div class="adminhdr">
+    <button class="abtn" id="myBack">← 首页</button>
+    <h1>我的订单</h1>
+    <button class="abtn" id="myNew">去定制</button>
+  </div>
+
+  <div class="oq">
+    <div class="oqbox">
+      <input id="myPhone" type="tel" inputmode="numeric" maxlength="11" placeholder="下单时填的手机号" autocomplete="tel">
+      <button id="myQuery">查询</button>
+    </div>
+    <div class="hint" style="margin-top:8px">订单按手机号归属，换设备也能查到</div>
+  </div>
+
+  <div class="myorders" id="myList"></div>
+</div>
+
+<!-- ============ 手串详情抽屉 ============ -->
+<div class="sheet" id="sheetSpec">
+  <div class="sheetmask" id="specMask"></div>
+  <div class="sheetbody">
+    <button class="sheetclose" id="specClose">收起</button>
+    <div class="grab"></div>
+    <div class="grp">
+      <h2>手串详情</h2>
+      <div class="spec" id="specBody"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
 
 <script>
+/* ===== core.js：与小程序工程单源，勿改 ===== */
+
 /* core.js 内联为单文件版；源文件见 prototype/core.js */
 /* core.js — 水晶手串配置器核心算法（零依赖，纯函数）
  *
@@ -1035,79 +1749,177 @@ select,input[type=number]{padding:6px 9px;border:1px solid rgba(0,0,0,.14);borde
     randomPreset, pickStyle, pickSize, STYLES, SIZE_POOL,
   };
 });
+
 </script>
 <script>
 "use strict";
-/* UI 层：所有算法来自 core.js（单一事实来源），此处只负责交互与渲染 */
+/* =====================================================================
+ * UI 层：画布渲染 / 拖拽 / 珠材库 / 参数计算 / 详情
+ * 所有算法来自 core.js（单一事实来源），此处只负责交互与呈现。
+ *
+ * 与上一版的差别（对齐小程序 pages/custom）：
+ *   · 只有 1–2 颗也要画出来，不让顾客以为点击失败
+ *   · 拖到两珠之间用 layoutWithGap 把缝撑开预览，松手才真正插入
+ *   · 长按珠子弹出删除浮标；长按珠材卡可直接拖到环上添加
+ *   · 左上角健康度标签；建议文案改成「建议增加/减少 N 颗」
+ * ===================================================================== */
 
 const $ = id => document.getElementById(id);
 const C = BraceletCore;
 
+/* ===== 珠子实拍渲染图（PC53 Qwen-Image 生图，缺失则回落渐变色） ===== */
+const BEAD_IMG = {
+  w:  'assets/beads/w.webp',    // 白水晶
+  ro: 'assets/beads/ro.webp',   // 粉水晶
+  gr: 'assets/beads/gr.webp',   // 绿幽灵
+  bk: 'assets/beads/bk.webp',   // 黑曜石
+  /* 2026 社交媒体热度补充 */
+  s7: 'assets/beads/s7.webp',   // 超七
+  mo: 'assets/beads/mo.webp',   // 月光石
+  aq: 'assets/beads/aq.webp',   // 海蓝宝
+  lb: 'assets/beads/lb.webp',   // 拉长石
+  pr: 'assets/beads/pr.webp',   // 葡萄石
+  ga: 'assets/beads/ga.webp',   // 石榴石
+  /* 配件 */
+  ag: 'assets/beads/ag.webp',   // 金隔珠
+  as: 'assets/beads/as.webp',   // 银隔珠
+  ad: 'assets/beads/ad.webp',   // 银隔片
+  ap: 'assets/beads/ap.webp',   // 珍珠隔片
+  af: 'assets/beads/af.webp',   // 花托
+  ab: 'assets/beads/ab.webp'    // 中空桶珠
+};
+const _imgCache = {};
+function beadImage(id) {
+  const src = BEAD_IMG[id];
+  if (!src) return null;
+  const im = _imgCache[id];
+  return (im && im.complete && im.naturalWidth) ? im : null;
+}
+function beadBg(id) {
+  const src = BEAD_IMG[id];
+  return src ? ('url("' + src + '")') : '';
+}
+
+/* ===== 新增珠材与配件 =====
+ * core 的 BEADS / MAP 是「材质 × 珠径」的单一事实来源，这里做两件事：
+ *   1. 往 C.BEADS 追加新水晶（randomPreset 也会用到）
+ *   2. 另建配件表：配件不按直径计价，而是固定价 + 固定厚度
+ * 不改 core 源码，小程序那边不受影响。
+ */
+const NEW_BEADS = [
+  { id: 's7', name: '超七',   lab: [52, 22, -12], hex: '#8E4F6E', price: 20 },
+  { id: 'mo', name: '月光石', lab: [90,  2,  -6], hex: '#EDEBF2', price: 20 },
+  { id: 'aq', name: '海蓝宝', lab: [80, -12, -8], hex: '#BFD9E8', price: 20 },
+  { id: 'lb', name: '拉长石', lab: [40,  -6, -8], hex: '#5E6673', price: 20 },
+  { id: 'pr', name: '葡萄石', lab: [78, -14,  6], hex: '#C6DCC0', price: 20 },
+  { id: 'ga', name: '石榴石', lab: [35,  40, 20], hex: '#7A1F2B', price: 20 }
+];
+
+/* 手串配件：市面上水晶串最常用的是金属隔珠、隔片、花托，
+ * 「中空桶珠」就是你说的金属中空柱形——确实有，叫镂空隔珠管。
+ * d = 厚度（占环长），价格按「个」不按珠径。 */
+const ACCESSORIES = [
+  { id: 'ag', name: '金隔珠',   d: 6, price: 8,  hex: '#D9B46A', lab: [76,  6, 38], cat: 'acc' },
+  { id: 'as', name: '银隔珠',   d: 6, price: 6,  hex: '#C8CCD2', lab: [82,  0, -3], cat: 'acc' },
+  { id: 'ad', name: '银隔片',   d: 4, price: 4,  hex: '#D2D6DC', lab: [86,  0, -3], cat: 'acc' },
+  { id: 'ap', name: '珍珠隔片', d: 4, price: 5,  hex: '#F0EAE4', lab: [93,  2,  4], cat: 'acc' },
+  { id: 'af', name: '花托',     d: 8, price: 6,  hex: '#C4C8CE', lab: [80,  0, -3], cat: 'acc' },
+  { id: 'ab', name: '中空桶珠', d: 8, price: 12, hex: '#CBD0D6', lab: [83,  0, -3], cat: 'acc' }
+];
+
+const ACC_MAP = {};
+ACCESSORIES.forEach(function (a) { ACC_MAP[a.id] = a; });
+
+NEW_BEADS.forEach(function (b) {
+  if (!C.MAP[b.id]) {
+    C.BEADS.push(b);
+    C.MAP[b.id] = b;
+  }
+});
+ACCESSORIES.forEach(function (a) { C.MAP[a.id] = a; });
+
+/** 统一计价：配件按个，其余走 core 的珠径阶梯价。 */
+function priceOf(id, d) {
+  if (ACC_MAP[id]) return ACC_MAP[id].price;
+  return C.priceOf(id, d);
+}
+function isAcc(id) { return !!ACC_MAP[id]; }
+
 /* ========= 状态 ========= */
 const S = {
-  seq: [],          // [{id, d}] 已放置序列，无空位
-  sel: -1,          // 选中索引；>=0 时珠材库点击为「替换」
-  newD: 12,         // 新加珠子的珠径
-  drag: null,       // {from, dx, dy, x, y, to}
+  seq: [],
+  sel: -1,
+  newD: 12,
+  libMode: 'bead',   // 'bead' 珠子 / 'acc' 配件
+  drag: null,        // {from, dx, dy, x, y, intent}
+  press: null,       // 按下未移动：{idx, x0, y0, timer, fired}
+  trashMark: -1,     // 长按后出现的删除浮标，指向的珠子下标
   seen: new Set(),
+  lastKey: null
 };
 
 function scaleOf(L) { return L.ok ? L.K : 2.2; }
-/* 画布尺寸驱动缩放：520px 画布 → 可用外缘半径 221px（0.85 留边）。
-   ⚠️ 必须传实际画布尺寸，core 无法硬编码。 */
-function layoutNow() {
-  const cv = document.getElementById('cv');
-  const size = (cv && cv.width) || 520;
-  return C.layout(S.seq, 0, size / 2 * 0.85);
+
+Object.keys(BEAD_IMG).forEach(function (k) {
+  const im = new Image();
+  im.onload = function () {
+    try { draw(); } catch (_) {}
+    try { renderLib(); } catch (_) {}
+    try { renderSeq(); } catch (_) {}
+  };
+  im.src = BEAD_IMG[k];
+  _imgCache[k] = im;
+});
+
+/* =====================================================================
+ * 布局
+ * ===================================================================== */
+function stageSize() {
+  const cvEl = $('cv');
+  const w = (cvEl && cvEl.clientWidth) || 320;
+  const h = (cvEl && cvEl.clientHeight) || 320;
+  return Math.max(120, Math.min(w, h));
+}
+function maxOuter() { return stageSize() / 2 * 0.82; }
+
+/**
+ * core.layout 要求至少 3 颗才能解闭环方程；但 1–2 颗时画面不能空着——
+ * 顾客点了一颗却什么都没出现，会以为按钮坏了。这里给 1–2 颗一条临时排布。
+ */
+function layoutNow(overrideMax) {
+  const n = S.seq.length;
+  const maxR = overrideMax || maxOuter();
+  if (!n) return { ok: false, n: 0 };
+  if (n >= 3) return C.layout(S.seq, 0, maxR);
+
+  const dmax = Math.max.apply(null, S.seq.map(function (b) { return b.d; }));
+  const K = (maxR * 1.55) / dmax;      // 单颗直径 ≈ 1.55 × 可用半径
+  if (n === 1) {
+    const b = S.seq[0], r = b.d / 2 * K;
+    return {
+      ok: true, n: 1, K, R: r, partial: true,
+      items: [{ b: b, a: 0, r: r, x: 0, y: 0 }],
+      ri: 0, innerPerim: 0, avgD: b.d, mixed: false, chordSum: 0
+    };
+  }
+  const r1 = S.seq[0].d / 2 * K, r2 = S.seq[1].d / 2 * K;
+  const pad = 12;
+  const total = r1 * 2 + pad + r2 * 2;
+  return {
+    ok: true, n: 2, K, R: total / 2, partial: true,
+    items: [
+      { b: S.seq[0], a: 0, r: r1, x: -total / 2 + r1, y: 0 },
+      { b: S.seq[1], a: 0, r: r2, x: total / 2 - r2, y: 0 }
+    ],
+    ri: 0, innerPerim: 0,
+    avgD: (S.seq[0].d + S.seq[1].d) / 2,
+    mixed: S.seq[0].d !== S.seq[1].d, chordSum: 0
+  };
 }
 
-/* ========= 渲染：珠串 ========= */
-function draw() {
-  const cv = $('cv'), ctx = cv.getContext('2d');
-  const W = cv.width, cx = W / 2, cy = W / 2;
-  ctx.clearRect(0, 0, W, W);
-  if (!S.seq.length) {
-    ctx.fillStyle = '#888780';
-    ctx.font = '14px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('点击右侧珠材库开始配珠', cx, cy);
-    return;
-  }
-  const L = layoutNow();
-  if (!L.ok) return;
-  const K = scaleOf(L), R = L.R;                     // 像素半径由 core 统一给出
-
-  ctx.beginPath(); ctx.arc(cx, cy, R - 3, 0, Math.PI * 2);
-  ctx.strokeStyle = '#C9C3B4'; ctx.lineWidth = 5; ctx.stroke();
-
-  const dragIdx = S.drag ? S.drag.from : -1;
-  for (let i = 0; i < L.items.length; i++) {
-    const it = L.items[i];
-    const m = C.MAP[it.b.id];
-    let x, y, r;
-    if (i === dragIdx && S.drag) {
-      x = cx + S.drag.x; y = cy + S.drag.y; r = it.r * 1.08;   // 跟手（坐标同源）
-    } else {
-      x = cx + it.x; y = cy + it.y; r = it.r;
-    }
-    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2);
-    const gr = ctx.createRadialGradient(x - r * .3, y - r * .33, r * .05, x, y, r * .62);
-    gr.addColorStop(0, 'rgba(255,255,255,.95)');
-    gr.addColorStop(.35, m.hex);
-    gr.addColorStop(1, shade(m.hex, -42));
-    ctx.fillStyle = gr; ctx.fill();
-    ctx.beginPath(); ctx.arc(x - r * .3, y - r * .34, r * .11, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(255,255,255,.9)'; ctx.fill();
-    if (S.sel === i && i !== dragIdx) {
-      ctx.beginPath(); ctx.arc(x, y, r + 2.5, 0, Math.PI * 2);
-      ctx.strokeStyle = '#185FA5'; ctx.lineWidth = 2; ctx.stroke();
-    }
-    if (S.drag && S.drag.to === i && i !== dragIdx) {
-      ctx.beginPath(); ctx.arc(x, y, r + 4, 0, Math.PI * 2);
-      ctx.strokeStyle = '#D97706'; ctx.lineWidth = 2.5; ctx.stroke();
-    }
-  }
-}
+/* =====================================================================
+ * 绘制
+ * ===================================================================== */
 function shade(hex, p) {
   const n = parseInt(hex.slice(1), 16);
   let r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
@@ -1116,267 +1928,762 @@ function shade(hex, p) {
   return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
 }
 
-/* ========= 画布拖动 ========= */
+function trashPos(L, idx) {
+  const it = L.items[idx];
+  if (!it) return null;
+  const d = Math.hypot(it.x, it.y) || 1;
+  const off = it.r + 17;
+  return { x: it.x + it.x / d * off, y: it.y + it.y / d * off, r: 13 };
+}
+
+function draw(override) {
+  const cvEl = $('cv'), ctx = cvEl.getContext('2d');
+  const dpr = Math.min(window.devicePixelRatio || 1, 3);
+  const W = Math.round(cvEl.clientWidth || 320), H = Math.round(cvEl.clientHeight || 320);
+  if (cvEl.width !== W * dpr || cvEl.height !== H * dpr) {
+    cvEl.width = W * dpr; cvEl.height = H * dpr;
+  }
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const cx = W / 2, cy = H / 2;
+  ctx.clearRect(0, 0, W, H);
+
+  if (!S.seq.length) {
+    ctx.fillStyle = '#B79C8B';
+    ctx.font = '13px system-ui,sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('点下方珠材加一颗', cx, cy);
+    return;
+  }
+
+  const L = override || layoutNow();
+  if (!L.ok) return;
+
+  /* 环线：只在 3 颗以上（真正成环时）画 */
+  if (!L.partial) {
+    ctx.beginPath(); ctx.arc(cx, cy, L.R - 3, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(201,195,180,.85)';
+    ctx.lineWidth = 4; ctx.stroke();
+  }
+
+  const dragIdx = S.drag ? S.drag.from : -1;
+  const gapG = (S.drag && S.drag.intent && S.drag.intent.mode === 'insert') ? S.drag.intent.gap : -1;
+
+  /* 插入预览：把将让出的那道缝画成虚线圈，顾客能看见「这儿要空出来」 */
+  if (gapG >= 0 && L.gapMid) {
+    ctx.beginPath();
+    ctx.arc(cx + L.R * Math.cos(L.gapMid.a), cy + L.R * Math.sin(L.gapMid.a),
+            L.gapMid.r, 0, Math.PI * 2);
+    ctx.setLineDash([5, 5]);
+    ctx.strokeStyle = 'rgba(240,127,94,.75)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  for (let i = 0; i < L.items.length; i++) {
+    const it = L.items[i];
+    const m = C.MAP[it.b.id] || { hex: '#ccc' };
+    let x, y, r;
+    if (i === dragIdx && S.drag) {
+      x = cx + S.drag.x; y = cy + S.drag.y; r = it.r * 1.06;
+    } else {
+      x = cx + it.x; y = cy + it.y; r = it.r;
+    }
+
+    const bimg = beadImage(it.b.id);
+    if (bimg) {
+      /* 同一张图反复用，朝向一致会看出「贴图复制」；
+         按位置给确定性旋转 + 隔颗镜像，拖拽重绘时不会乱跳 */
+      const rot = ((i * 53 + 17) % 360) * Math.PI / 180;
+      const flip = (i % 3 === 1);
+
+      ctx.save();
+      ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.closePath();
+      ctx.clip();
+      ctx.translate(x, y);
+      ctx.rotate(rot);
+      if (flip) ctx.scale(-1, 1);
+      ctx.drawImage(bimg, -r, -r, r * 2, r * 2);
+      ctx.restore();
+
+      /* 高光不跟着转：整条手串只有一盏左上方的灯 */
+      ctx.save();
+      ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.closePath();
+      ctx.clip();
+      const gl = ctx.createRadialGradient(x - r * .34, y - r * .40, r * .02,
+                                          x - r * .10, y - r * .12, r * 1.18);
+      gl.addColorStop(0, 'rgba(255,255,255,.40)');
+      gl.addColorStop(.42, 'rgba(255,255,255,.05)');
+      gl.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = gl;
+      ctx.fillRect(x - r, y - r, r * 2, r * 2);
+      ctx.restore();
+
+      ctx.beginPath(); ctx.arc(x, y, r - .4, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(120,90,70,.16)';
+      ctx.lineWidth = Math.max(.6, r * .045);
+      ctx.stroke();
+    } else {
+      ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2);
+      const gr = ctx.createRadialGradient(x - r * .3, y - r * .33, r * .05, x, y, r * .62);
+      gr.addColorStop(0, 'rgba(255,255,255,.95)');
+      gr.addColorStop(.35, m.hex);
+      gr.addColorStop(1, shade(m.hex, -42));
+      ctx.fillStyle = gr; ctx.fill();
+      ctx.beginPath(); ctx.arc(x - r * .3, y - r * .34, r * .11, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255,255,255,.9)'; ctx.fill();
+    }
+
+    if (S.sel === i && i !== dragIdx) {
+      ctx.beginPath(); ctx.arc(x, y, r + 2.5, 0, Math.PI * 2);
+      ctx.strokeStyle = '#2F6B5C'; ctx.lineWidth = 2.5; ctx.stroke();
+    }
+    if (S.drag && S.drag.intent && S.drag.intent.mode === 'swap'
+        && S.drag.intent.target === i && i !== dragIdx) {
+      ctx.beginPath(); ctx.arc(x, y, r + 4, 0, Math.PI * 2);
+      ctx.strokeStyle = '#D97706'; ctx.lineWidth = 2.5; ctx.stroke();
+    }
+  }
+
+  /* 长按删除浮标 */
+  if (S.trashMark >= 0 && S.trashMark < L.items.length) {
+    const p = trashPos(L, S.trashMark);
+    if (p) {
+      ctx.beginPath(); ctx.arc(cx + p.x, cy + p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = '#F07F5E'; ctx.fill();
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+      const k = p.r * .40;
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 2.4; ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(cx + p.x - k, cy + p.y - k); ctx.lineTo(cx + p.x + k, cy + p.y + k);
+      ctx.moveTo(cx + p.x + k, cy + p.y - k); ctx.lineTo(cx + p.x - k, cy + p.y + k);
+      ctx.stroke();
+    }
+  }
+}
+
+/* =====================================================================
+ * 画布交互：互换 / 插入 / 长按删除
+ * ===================================================================== */
 const cv = $('cv');
 function cvPos(e) {
   const r = cv.getBoundingClientRect();
-  const sx = cv.width / r.width, sy = cv.height / r.height;
-  const p = e.touches && e.touches[0] ? e.touches[0] : e;
-  return { x: (p.clientX - r.left) * sx - cv.width / 2, y: (p.clientY - r.top) * sy - cv.height / 2 };
+  const p = (e.touches && e.touches[0]) ? e.touches[0] : e;
+  return { x: (p.clientX - r.left) - r.width / 2, y: (p.clientY - r.top) - r.height / 2 };
 }
-cv.addEventListener('pointerdown', e => {
+function tag(t) { const el = $('canvasTag'); if (el) el.textContent = t; }
+
+function clearPress() {
+  if (S.press && S.press.timer) clearTimeout(S.press.timer);
+  S.press = null;
+}
+
+cv.addEventListener('pointerdown', function (e) {
   const L = layoutNow();
   if (!L.ok) return;
   const p = cvPos(e);
+
+  /* ① 浮标优先：点中就删，点别处就收起 */
+  if (S.trashMark >= 0) {
+    const tp = trashPos(L, S.trashMark);
+    if (tp && Math.hypot(p.x - tp.x, p.y - tp.y) <= tp.r + 8) {
+      S.seq = C.removeAt(S.seq, S.trashMark);
+      if (S.sel === S.trashMark) S.sel = -1;
+      else if (S.sel > S.trashMark) S.sel--;
+      S.trashMark = -1;
+      tag('拖动重排 · 拖到别珠上互调');
+      renderAll();
+      e.preventDefault();
+      return;
+    }
+    S.trashMark = -1;
+    draw();
+  }
+
   const i = C.hitTest(L, p.x, p.y, 4);
-  if (i < 0) { S.sel = -1; renderAll(); return; }
-  // 偏移量直接用 core 给的像素坐标，避免二次换算
-  S.drag = { from:i, dx: p.x - L.items[i].x, dy: p.y - L.items[i].y,
-             x: 0, y: 0, to: -1 };
-  S.sel = i;
+  if (i < 0) {
+    S.sel = -1; renderAll();
+    return;
+  }
+
+  S.press = {
+    idx: i, x0: p.x, y0: p.y,
+    timer: setTimeout(function () {
+      if (!S.press) return;
+      const idx = S.press.idx;
+      S.press = null;
+      S.trashMark = idx;
+      S.sel = idx;
+      draw();
+      tag('点红叉删掉这颗');
+      if (navigator.vibrate) navigator.vibrate(14);
+    }, 480)
+  };
+
   try { cv.setPointerCapture(e.pointerId); } catch (_) {}
-  cv.classList.add('drag');
   e.preventDefault();
 });
-cv.addEventListener('pointermove', e => {
+
+cv.addEventListener('pointermove', function (e) {
+  const p = cvPos(e);
+
+  /* 按下未长按：先判断是否该进入拖拽 */
+  if (S.press && !S.drag) {
+    if (Math.hypot(p.x - S.press.x0, p.y - S.press.y0) > 8) {
+      const from = S.press.idx;
+      const x0 = S.press.x0, y0 = S.press.y0;   // 按下点，不是当前点
+      const L0 = layoutNow();
+      const it = L0.ok ? L0.items[from] : null;
+      clearPress();
+      if (!it) return;
+      /* 偏移必须用「按下点 − 珠心」。若用当前点，珠子会永远落后手指
+         一个触发距离（约 8–10px），拖起来黏手。 */
+      S.drag = { from: from, dx: x0 - it.x, dy: y0 - it.y, x: it.x, y: it.y,
+                 intent: { mode: 'none', target: -1, gap: -1 } };
+      S.sel = from;
+      cv.classList.add('drag');
+    } else {
+      return;
+    }
+  }
+
   if (!S.drag) return;
-  const p = cvPos(e), L = layoutNow();
+
+  const L = layoutNow();
   S.drag.x = p.x - S.drag.dx;
   S.drag.y = p.y - S.drag.dy;
-  S.drag.to = L.ok ? C.slotFromPoint(L, S.drag.x, S.drag.y) : -1;
-  draw();
+
+  /* 落点判定基于真实布局，不能用「插入后」的预览布局，否则会自激抖动 */
+  S.drag.intent = L.ok ? C.dropIntent(L, S.drag.x, S.drag.y) : { mode: 'none', target: -1, gap: -1 };
+
+  let prev = null;
+  if (L.ok && S.drag.intent.mode === 'insert') {
+    const G = C.layoutWithGap(S.seq, S.drag.from, S.drag.intent.gap, maxOuter());
+    if (G) prev = G;
+  }
+  draw(prev);
+
+  tag(S.drag.intent.mode === 'insert' ? '松手插入两珠之间'
+      : (S.drag.intent.mode === 'swap'
+         ? (S.drag.intent.target === S.drag.from ? '松手放回原位' : '松手交换这两颗')
+         : '松手放到目标位'));
+
   e.preventDefault();
 });
+
 function endDrag(e) {
+  clearPress();
   if (!S.drag) return;
-  const { from, to } = S.drag;
+
+  const from = S.drag.from;
+  const intent = S.drag.intent;
   S.drag = null;
   cv.classList.remove('drag');
-  if (to >= 0 && to !== from) S.seq = C.swapItems(S.seq, from, to);   // 互调
+
+  if (intent && (intent.mode === 'swap' || intent.mode === 'insert')) {
+    const next = C.applyDrop(S.seq, from, intent);
+    if (next !== S.seq) {
+      S.seq = next;
+      /* 选中圈跟着珠子走，否则会留在原下标指向别的珠子 */
+      if (S.sel === from) {
+        S.sel = intent.mode === 'swap'
+          ? intent.target
+          : (from <= intent.gap ? intent.gap : intent.gap + 1);
+      }
+    }
+  }
+  tag('拖动重排 · 拖到别珠上互调');
   renderAll();
   if (e) e.preventDefault();
 }
 cv.addEventListener('pointerup', endDrag);
 cv.addEventListener('pointercancel', endDrag);
 
-/* ========= 序列条 ========= */
+/* =====================================================================
+ * 序列条
+ * ===================================================================== */
 function renderSeq() {
-  const box = $('seq'); box.innerHTML = '';
-  const L = layoutNow();
-  const K = scaleOf(L);
-  S.seq.forEach((b, i) => {
+  const box = $('seq');
+  if (!box) return;
+  box.innerHTML = '';
+  S.seq.forEach(function (b, i) {
     const d = document.createElement('div');
-    const px = Math.max(16, Math.round(b.d * K * 1.55));
-    d.className = 'slot' + (S.sel === i ? ' sel' : '') + (S.drag && S.drag.to === i ? ' over' : '');
+    const px = Math.max(24, Math.min(36, Math.round(b.d * 2.4)));
+    d.className = 'slot' + (S.sel === i ? ' sel' : '');
     d.style.width = px + 'px'; d.style.height = px + 'px';
-    d.style.background = 'radial-gradient(circle at 32% 28%,rgba(255,255,255,.9),transparent 45%),' + C.MAP[b.id].hex;
+    if (beadBg(b.id)) {
+      d.style.backgroundImage = beadBg(b.id);
+      d.style.backgroundSize = 'cover';
+      d.style.backgroundPosition = 'center';
+      d.style.backgroundColor = (C.MAP[b.id] || {}).hex || '#ddd';
+    } else {
+      d.style.background = 'radial-gradient(circle at 32% 28%,rgba(255,255,255,.9),transparent 45%),' + C.MAP[b.id].hex;
+    }
     d.title = C.MAP[b.id].name + ' ' + b.d + 'mm';
-    d.draggable = true; d.dataset.i = i;
 
     const ix = document.createElement('span'); ix.className = 'idx'; ix.textContent = i + 1;
     const del = document.createElement('span'); del.className = 'del'; del.textContent = '×';
     del.title = '删除这一颗';
-    del.onclick = ev => { ev.stopPropagation(); S.seq = C.removeAt(S.seq, i); S.sel = -1; renderAll(); };
-    d.appendChild(ix); d.appendChild(del);
-    d.onclick = () => { S.sel = (S.sel === i ? -1 : i); renderAll(); };
-    d.onpointerdown = ev => {
-      if (ev.target === del) return;
-      S.drag = { from:i, dx:0, dy:0, x:0, y:0, to:-1 };
-      d.classList.add('drag');
-    };
-    d.onpointerup = () => {
-      if (!S.drag || S.drag.from !== i) return;
-      d.classList.remove('drag');
-      const to = S.drag.to;
-      S.drag = null;
-      if (to >= 0 && to !== i) S.seq = C.swapItems(S.seq, i, to);
+    del.onclick = function (ev) {
+      ev.stopPropagation();
+      S.seq = C.removeAt(S.seq, i);
+      if (S.sel === i) S.sel = -1; else if (S.sel > i) S.sel--;
       renderAll();
     };
-    d.onpointerenter = () => { if (S.drag) S.drag.to = i; };
+    d.appendChild(ix); d.appendChild(del);
+    d.onclick = function () { S.sel = (S.sel === i ? -1 : i); renderAll(); };
     box.appendChild(d);
   });
   if (!S.seq.length) {
-    const e = document.createElement('div');
-    e.style.cssText = 'color:#888780;font-size:12px;padding:6px';
-    e.textContent = '序列为空，点右侧珠材库加珠';
-    box.appendChild(e);
+    const e2 = document.createElement('div');
+    e2.style.cssText = 'color:#B79C8B;font-size:11px;padding:6px';
+    e2.textContent = '还没加珠子';
+    box.appendChild(e2);
   }
 }
 
-/* ========= 珠材库 / 珠径选择 ========= */
-function renderLib() {
-  const box = $('lib'); box.innerHTML = '';
-  for (const b of C.BEADS) {
-    const el = document.createElement('div');
-    el.className = 'bead';
-    const dot = document.createElement('div'); dot.className = 'dot';
-    dot.style.background = 'radial-gradient(circle at 32% 28%,rgba(255,255,255,.9),transparent 45%),' + b.hex;
-    const nm = document.createElement('div'); nm.className = 'nm'; nm.textContent = b.name;
-    const pr = document.createElement('div'); pr.className = 'pr';
-    pr.textContent = S.newD + 'mm ¥' + C.priceOf(b.id, S.newD);
-    const add = document.createElement('div'); add.className = 'add';
-    add.textContent = S.sel >= 0 ? '替换' : '+1';
-    el.appendChild(dot); el.appendChild(nm); el.appendChild(pr); el.appendChild(add);
-    el.onclick = () => {
-      if (S.sel >= 0 && S.sel < S.seq.length) {
-        S.seq = C.replaceAt(S.seq, S.sel, b.id, S.newD);   // 替换选中那颗
-        S.sel = -1;
-      } else {
-        S.seq = C.addOne(S.seq, b.id, S.newD);            // 点一次 = 加一颗
-      }
-      renderAll();
-    };
-    box.appendChild(el);
+/* =====================================================================
+ * 珠材库：点击加一颗 / 长按拖到环上
+ * ===================================================================== */
+let libDrag = null;
+let suppressClick = false;
+
+function beadCardStyle(el, b) {
+  if (beadBg(b.id)) {
+    el.style.backgroundImage = beadBg(b.id);
+    el.style.backgroundColor = b.hex;
+  } else {
+    el.style.background = 'radial-gradient(circle at 32% 28%,rgba(255,255,255,.9),transparent 45%),' + b.hex;
   }
 }
+
+function renderLib() {
+  const box = $('lib');
+  if (!box) return;
+  box.innerHTML = '';
+
+  const acc = (S.libMode === 'acc');
+  const list = acc ? ACCESSORIES : C.BEADS;
+
+  list.forEach(function (b) {
+    const d = acc ? b.d : S.newD;
+    const el = document.createElement('div');
+    el.className = 'bead' + (acc ? ' acc' : '');
+
+    const dot = document.createElement('div'); dot.className = 'dot';
+    beadCardStyle(dot, b);
+
+    const nm = document.createElement('div'); nm.className = 'nm'; nm.textContent = b.name;
+
+    const pr = document.createElement('div'); pr.className = 'pr';
+    pr.textContent = acc ? ('¥' + b.price + '/个') : (S.newD + 'mm ¥' + priceOf(b.id, S.newD));
+
+    const add = document.createElement('div'); add.className = 'add';
+    add.textContent = S.sel >= 0 ? '替换' : (acc ? '加上' : '+1');
+
+    el.appendChild(dot); el.appendChild(nm); el.appendChild(pr); el.appendChild(add);
+    el.title = b.name + (acc ? ' · 厚 ' + b.d + 'mm' : ' ' + S.newD + 'mm');
+
+    el.addEventListener('click', function () {
+      if (suppressClick) { suppressClick = false; return; }
+      if (S.sel >= 0 && S.sel < S.seq.length) {
+        S.seq = C.replaceAt(S.seq, S.sel, b.id, d);
+        S.sel = -1;
+      } else {
+        S.seq = C.addOne(S.seq, b.id, d);
+      }
+      renderAll();
+    });
+
+    /* 长按 380ms 进入拖拽 */
+    el.addEventListener('pointerdown', function (ev) {
+      const t = setTimeout(function () { beginLibDrag(b, ev); }, 380);
+      const cancel = function () {
+        clearTimeout(t);
+        el.removeEventListener('pointerup', cancel);
+        el.removeEventListener('pointerleave', cancel);
+      };
+      el.addEventListener('pointerup', cancel);
+      el.addEventListener('pointerleave', cancel);
+    });
+
+    box.appendChild(el);
+  });
+}
+
+function beginLibDrag(b, startEv) {
+  if (libDrag) return;
+  suppressClick = true;
+  if (navigator.vibrate) navigator.vibrate(12);
+
+  const g = document.createElement('div');
+  g.className = 'ghostbead';
+  const sz = 46;
+  g.style.width = sz + 'px'; g.style.height = sz + 'px';
+  beadCardStyle(g, b);
+  document.body.appendChild(g);
+
+  libDrag = { bead: b, ghost: g, over: false };
+  moveGhost(startEv.clientX, startEv.clientY);
+
+  document.addEventListener('pointermove', onLibMove, { passive: false });
+  document.addEventListener('pointerup', onLibUp);
+  document.addEventListener('pointercancel', onLibUp);
+}
+
+function moveGhost(x, y) {
+  if (!libDrag) return;
+  libDrag.ghost.style.left = x + 'px';
+  libDrag.ghost.style.top = y + 'px';
+  const r = cv.getBoundingClientRect();
+  const over = x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
+  libDrag.ghost.classList.toggle('drop', over);
+  libDrag.over = over;
+}
+
+function onLibMove(ev) {
+  ev.preventDefault();
+  moveGhost(ev.clientX, ev.clientY);
+}
+
+function onLibUp() {
+  document.removeEventListener('pointermove', onLibMove);
+  document.removeEventListener('pointerup', onLibUp);
+  document.removeEventListener('pointercancel', onLibUp);
+  if (!libDrag) return;
+
+  const over = libDrag.over;
+  const bead = libDrag.bead;
+  libDrag.ghost.remove();
+  libDrag = null;
+
+  if (over) {
+    const d = ACC_MAP[bead.id] ? bead.d : S.newD;
+    S.seq = C.addOne(S.seq, bead.id, d);
+    renderAll();
+    if (navigator.vibrate) navigator.vibrate(10);
+  }
+  /* 拖拽结束后紧跟的 click 要吞掉，否则会重复加一颗 */
+  setTimeout(function () { suppressClick = false; }, 60);
+}
+
+/* =====================================================================
+ * 珠径选择
+ * ===================================================================== */
 function renderSizePick() {
-  const box = $('sizePick'); box.innerHTML = '';
-  [8, 10, 12, 14].forEach(d => {
+  const box = $('sizePick');
+  if (!box) return;
+  box.innerHTML = '';
+  const accMode = (S.libMode === 'acc');
+  [8, 10, 12, 14].forEach(function (d) {
     const btn = document.createElement('button');
     btn.textContent = d + 'mm';
-    btn.className = S.newD === d ? 'sizepick-on' : '';
-    btn.classList.toggle('on', S.newD === d);
-    btn.onclick = () => { S.newD = d; renderAll(); };
+    btn.className = (S.newD === d && !accMode) ? 'on' : '';
+    if (accMode) {
+      btn.disabled = true;
+      btn.style.opacity = '.38';
+      btn.style.cursor = 'default';
+    } else {
+      btn.onclick = function () { S.newD = d; renderAll(); };
+    }
     box.appendChild(btn);
   });
 }
 
-/* ========= 计算与信息 ========= */
+/* =====================================================================
+ * 计算 / 文案 / 健康标签
+ * ===================================================================== */
+function cordLabel(c) { return c === 'elastic' ? '弹力线' : '蜡绳活结'; }
+
+function healthOf(diff, level) {
+  const ad = Math.abs(diff);
+  if (level === 'ok' && ad <= 1) return { cls: 'ok', text: '合适' };
+  if (ad >= 4) return { cls: 'bad', text: diff > 0 ? '珠子太多！' : '珠子太少！' };
+  if (ad >= 2) return { cls: 'warn', text: diff > 0 ? '珠子偏多' : '珠子偏少' };
+  return { cls: level === 'ok' ? 'ok' : 'warn', text: diff > 0 ? '珠子偏多' : '珠子偏少' };
+}
+
+function setHealth(h) {
+  const el = $('hp');
+  if (!el) return;
+  if (!h) { el.hidden = true; return; }
+  el.hidden = false;
+  el.className = 'hp ' + h.cls;
+  el.textContent = h.text;
+}
+
 function calc() {
   const wrist = +$('wrist').value, ease = +$('fit').value, cord = $('cord').value;
   const n = S.seq.length;
   const target = cord === 'elastic' ? wrist + ease : wrist * C.PALM_RATIO + 5;
 
   if (!n) {
-    $('info').innerHTML = '<span>尚未配珠</span>';
-    $('verdict').innerHTML = '<div class="ok">点右侧珠材库加珠。建议约 ' +
+    $('info').innerHTML = '';
+    $('verdict').innerHTML = '<div class="ok">点下方珠材加一颗。建议约 ' +
       C.suggestCount(target, S.newD) + ' 颗 ' + S.newD + 'mm。</div>';
-    $('price').textContent = '¥0';
+    $('price').textContent = '0';
     $('priceD').innerHTML = '共 0 颗';
     $('cordHint').textContent = '';
     $('sizeHint').textContent = '当前珠径 ' + S.newD + 'mm。';
+    setHealth(null);
+    renderSpec();
     return;
   }
+
   const L = layoutNow();
-  if (!L.ok) {
-    $('verdict').innerHTML = '<div class="warn">至少需要 3 颗才能成环</div>';
-    return;
-  }
   const ds = C.seqDs(S.seq);
-  const stretch = C.stretchOf(L.innerPerim, wrist);
-  const vd = C.fitVerdict(stretch, cord);
-  const sug = C.suggestCount(target, L.avgD);
-  const diff = n - sug;
 
-  $('info').innerHTML =
-    '<span>颗数 <b>' + n + '</b></span>' +
-    (L.mixed ? '<span>均径 <b>' + L.avgD.toFixed(1) + 'mm</b>（混搭）</span>'
-             : '<span>珠径 <b>' + ds[0] + 'mm</b></span>') +
-    '<span>内径 <b>' + (L.ri * 2).toFixed(0) + 'mm</b></span>' +
-    '<span>内缘周长 <b>' + L.innerPerim.toFixed(0) + 'mm</b></span>' +
-    '<span>目标 <b>' + target.toFixed(0) + 'mm</b></span>' +
-    '<span>过掌拉伸 <b>' + stretch.toFixed(0) + '%</b></span>' +
-    '<span>线下料 <b>' + (L.chordSum + 30).toFixed(0) + 'mm</b></span>';
+  /* 1–2 颗：还成不了环，只显示「还差几颗」，不做松紧判定 */
+  if (L.partial) {
+    const need = C.suggestCount(target, L.avgD);
+    $('info').innerHTML = '<span>已选 <b>' + n + '</b> 颗</span>' +
+      (L.mixed ? '<span>均径 <b>' + L.avgD.toFixed(1) + 'mm</b></span>'
+               : '<span>珠径 <b>' + ds[0] + 'mm</b></span>') +
+      '<span>建议 <b>' + need + '</b> 颗</span>';
+    $('verdict').innerHTML = '<div class="ok">已放上 ' + n +
+      ' 颗。再加 ' + Math.max(1, need - n) + ' 颗就能围成环啦。</div>';
+    setHealth({ cls: 'warn', text: '珠子太少！' });
+    $('cordHint').textContent = '';
+    $('sizeHint').textContent = '当前珠径 ' + S.newD + 'mm，建议约 ' + need + ' 颗。';
+  } else {
+    const stretch = C.stretchOf(L.innerPerim, wrist);
+    const vd = C.fitVerdict(stretch, cord);
+    const sug = C.suggestCount(target, L.avgD);
+    const diff = n - sug;
 
-  let v = '<div class="' + vd.level + '">' + vd.msg + '</div>';
-  if (diff > 0) v += '<div class="warn">比建议多 ' + diff + ' 颗（约 ' + sug + ' 颗更合适），偏松</div>';
-  else if (diff < 0) v += '<div class="warn">比建议少 ' + (-diff) + ' 颗，偏紧</div>';
-  if (vd.level !== 'ok') {
-    const altR = C.resizeAdvice(n, wrist, cord, L.avgD, [8, 10, 12, 14]);
-    if (altR) v += '<div class="alt">或换 ' + altR.d + 'mm 珠（颗数不变）</div>';
+    $('info').innerHTML =
+      '<span>颗数 <b>' + n + '</b></span>' +
+      (L.mixed ? '<span>均径 <b>' + L.avgD.toFixed(1) + 'mm</b>（混搭）</span>'
+               : '<span>珠径 <b>' + ds[0] + 'mm</b></span>') +
+      '<span>内径 <b>' + (L.ri * 2).toFixed(0) + 'mm</b></span>' +
+      '<span>内缘 <b>' + L.innerPerim.toFixed(0) + 'mm</b></span>' +
+      '<span>目标 <b>' + target.toFixed(0) + 'mm</b></span>' +
+      '<span>拉伸 <b>' + stretch.toFixed(0) + '%</b></span>' +
+      '<span>下料 <b>' + (L.chordSum + 30).toFixed(0) + 'mm</b></span>';
+
+    let v = '<div class="' + vd.level + '">' + vd.msg + '</div>';
+    /* 不用「比建议多/少」：顾客会读成「已经多配了」，直接给动作 */
+    if (diff > 1) v += '<div class="warn">建议减少 ' + diff + ' 颗（约 ' + sug + ' 颗更合适）</div>';
+    else if (diff < -1) v += '<div class="warn">建议增加 ' + (-diff) + ' 颗（约 ' + sug + ' 颗更合适）</div>';
+
+    if (vd.level !== 'ok') {
+      const altR = C.resizeAdvice(n, wrist, cord, L.avgD, [8, 10, 12, 14]);
+      if (altR) v += '<div class="alt">或换成 ' + altR.d + 'mm 珠（颗数不变）</div>';
+    }
+
+    /* 去掉误报：只在序列真的变了时才判重 */
+    const key = C.canonKey(S.seq);
+    if (n > 3 && key !== S.lastKey) {
+      if (S.seen.has(key)) v += '<div class="dup">这条配色你之前配过 —— 旋转或翻面后与当前完全相同</div>';
+      S.seen.add(key);
+      S.lastKey = key;
+    }
+    $('verdict').innerHTML = v;
+    setHealth(healthOf(diff, vd.level));
+
+    $('cordHint').textContent = cord === 'elastic'
+      ? '弹力线：内径按腕围定，过掌靠拉伸（' + stretch.toFixed(0) + '%），贴合手腕'
+      : '蜡绳活结：闭合周长须≥掌围（' + (wrist * C.PALM_RATIO).toFixed(0) + 'mm），靠活结收紧';
+    $('sizeHint').textContent = L.mixed
+      ? '当前混搭，均径 ' + L.avgD.toFixed(1) + 'mm，建议约 ' + sug + ' 颗。'
+      : '当前全为 ' + ds[0] + 'mm，建议约 ' + sug + ' 颗。';
+    $('sizeHint').textContent += ' 新加珠子用上方选定珠径。';
   }
 
-  const key = C.canonKey(S.seq);
-  if (n > 3) {
-    if (S.seen.has(key)) v += '<div class="dup">这条配色你之前配过 —— 旋转或翻面后与当前完全相同</div>';
-    S.seen.add(key);
-  }
-  $('verdict').innerHTML = v;
-
-  const beads = S.seq.reduce((s, b) => s + C.priceOf(b.id, b.d), 0);
+  const beads = S.seq.reduce(function (s, b) { return s + priceOf(b.id, b.d); }, 0);
   const fee = C.CORD_FEE[cord];
-  $('price').textContent = '¥' + (beads + fee);
+  $('price').textContent = String(beads + fee);
   const bySize = {};
-  S.seq.forEach(b => { const k = b.d + 'mm'; bySize[k] = (bySize[k] || 0) + 1; });
+  S.seq.forEach(function (b) { const k = b.d + 'mm'; bySize[k] = (bySize[k] || 0) + 1; });
   $('priceD').innerHTML = n + ' 颗 · 珠材 ¥' + beads + ' + 绳费 ¥' + fee +
-    '<br>按径：' + Object.entries(bySize).map(([k, v]) => k + '×' + v).join('　');
+    '<br>按径：' + Object.entries(bySize).map(function (kv) { return kv[0] + '×' + kv[1]; }).join('　');
 
-  $('cordHint').textContent = cord === 'elastic'
-    ? '弹力线：内径按腕围定，过掌靠拉伸（' + stretch.toFixed(0) + '%），贴合手腕'
-    : '蜡绳活结：闭合周长须≥掌围（' + (wrist * C.PALM_RATIO).toFixed(0) + 'mm），靠活结收紧';
-  $('sizeHint').textContent = L.mixed
-    ? '当前混搭，均径 ' + L.avgD.toFixed(1) + 'mm，建议约 ' + sug + ' 颗。新加珠子用上方选定珠径。'
-    : '当前全为 ' + ds[0] + 'mm，建议约 ' + sug + ' 颗。可直接点珠材库混搭其他珠径。';
-  $('canvasTag').textContent = S.drag ? '松手放到目标位' : '拖动重排 · 拖到别珠上互调';
+  renderSpec(L);
 }
 
+/* =====================================================================
+ * 手串详情
+ * ===================================================================== */
+function renderSpec(L) {
+  const box = $('specBody');
+  if (!box) return;
+  const n = S.seq.length, wrist = +$('wrist').value, ease = +$('fit').value, cord = $('cord').value;
+  if (!n) { box.innerHTML = '<div class="hint">还没加珠子，先去挑几颗吧</div>'; return; }
+
+  L = L || layoutNow();
+  const target = cord === 'elastic' ? wrist + ease : wrist * C.PALM_RATIO + 5;
+  const beads = S.seq.reduce(function (s, b) { return s + priceOf(b.id, b.d); }, 0);
+  const fee = C.CORD_FEE[cord];
+
+  const rows = [];
+  rows.push(['颗数', n + ' 颗']);
+  if (L.partial) {
+    rows.push(['状态', '还差 ' + Math.max(1, C.suggestCount(target, L.avgD) - n) + ' 颗成环']);
+  } else {
+    const stretch = C.stretchOf(L.innerPerim, wrist);
+    rows.push(['内径', (L.ri * 2).toFixed(0) + ' mm']);
+    rows.push(['内缘周长', L.innerPerim.toFixed(0) + ' mm']);
+    rows.push(['目标周长', target.toFixed(0) + ' mm']);
+    rows.push(['过掌拉伸', stretch.toFixed(0) + ' %']);
+    rows.push(['线下料', (L.chordSum + 30).toFixed(0) + ' mm']);
+  }
+  rows.push(['手围', wrist + ' mm']);
+  rows.push(['松紧偏好', ease + ' mm']);
+  rows.push(['绳材', cordLabel(cord)]);
+  rows.push(['珠材', '¥' + beads]);
+  rows.push(['绳费', '¥' + fee]);
+  rows.push(['合计', '¥' + (beads + fee)]);
+
+  const byMat = {};
+  S.seq.forEach(function (b) {
+    const k = b.id + '|' + b.d;
+    if (!byMat[k]) byMat[k] = { id: b.id, d: b.d, n: 0 };
+    byMat[k].n++;
+  });
+  const matList = Object.keys(byMat).map(function (k) { return byMat[k]; })
+    .sort(function (a, b) { return b.n - a.n; });
+
+  box.innerHTML =
+    rows.map(function (r) {
+      return '<div class="spec-row"><span>' + r[0] + '</span><b>' + r[1] + '</b></div>';
+    }).join('') +
+    '<div class="spec-title">珠材清单</div>' +
+    '<div class="spec-beads">' +
+      matList.map(function (m) {
+        const bg = beadBg(m.id);
+        const style = bg
+          ? ('background-image:' + bg + ';background-color:' + ((C.MAP[m.id] || {}).hex || '#ddd'))
+          : ('background:' + ((C.MAP[m.id] || {}).hex || '#ddd'));
+        return '<i class="bd" style="' + style + '" title="' + C.MAP[m.id].name + ' ' + m.d + 'mm"></i>';
+      }).join('') +
+    '</div>' +
+    '<div class="hint" style="line-height:1.9">' +
+      matList.map(function (m) { return C.MAP[m.id].name + ' ' + m.d + 'mm ×' + m.n; }).join('　') +
+    '</div>';
+}
+
+/* =====================================================================
+ * 色带
+ * ===================================================================== */
 function renderBands() {
-  const box = $('bands'); box.innerHTML = '';
+  const box = $('bands');
+  if (!box) return;
+  box.innerHTML = '';
   const bs = C.bandsOf(S.seq);
-  if (!bs.length) { box.className = 'band empty'; box.textContent = '尚未配珠'; $('bandHint').textContent = ''; return; }
+  if (!bs.length) {
+    box.className = 'band empty';
+    box.textContent = '还没加珠子';
+    if ($('bandHint')) $('bandHint').textContent = '';
+    return;
+  }
   box.className = 'band';
-  for (const b of bs) {
+  bs.forEach(function (b) {
     const seg = document.createElement('div');
     seg.style.flex = b.n;
     seg.style.background = C.MAP[b.id].hex;
     seg.textContent = b.n + '×' + C.MAP[b.id].name;
     seg.title = C.MAP[b.id].name + ' ' + b.d + 'mm × ' + b.n;
     box.appendChild(seg);
-  }
+  });
   let maxStep = 0, hard = null;
-  for (let i = 1; i < bs.length; i++)
-    maxStep = Math.max(maxStep, C.ciede2000(C.MAP[bs[i-1].id].lab, C.MAP[bs[i].id].lab));
+  for (let i = 1; i < bs.length; i++) {
+    maxStep = Math.max(maxStep, C.ciede2000(C.MAP[bs[i - 1].id].lab, C.MAP[bs[i].id].lab));
+  }
   if (bs.length === 2) hard = C.ciede2000(C.MAP[bs[0].id].lab, C.MAP[bs[1].id].lab);
-  $('bandHint').textContent = S.seq.length + ' 颗 · ' + bs.length + ' 段 · 最大相邻色差 ΔE ' +
-    maxStep.toFixed(1) + (hard ? '（硬跳 ' + hard.toFixed(1) + '，已平滑 ' +
-      ((1 - maxStep / hard) * 100).toFixed(0) + '%）' : '') +
-    (bs.length > 1 && maxStep > 32 ? '　⚠️ 跳变偏大，是 12 色库的密度上限' : '');
+  if ($('bandHint')) {
+    $('bandHint').textContent = S.seq.length + ' 颗 · ' + bs.length + ' 段 · 最大相邻色差 ΔE ' +
+      maxStep.toFixed(1) + (hard ? '（硬跳 ' + hard.toFixed(1) + '，已平滑 ' +
+        ((1 - maxStep / hard) * 100).toFixed(0) + '%）' : '') +
+      (bs.length > 1 && maxStep > 32 ? '　⚠️ 跳变偏大，是 12 色库的密度上限' : '');
+  }
 }
 
 function renderAll() {
-  calc(); draw(); renderSeq(); renderLib(); renderSizePick(); renderBands();
-  $('wristV').textContent = $('wrist').value + 'mm';
+  calc();
+  draw();
+  renderSeq();
+  renderLib();
+  renderSizePick();
+  renderBands();
+  if ($('wristV')) $('wristV').textContent = $('wrist').value + 'mm';
 }
 
-/* ========= 交互 ========= */
+/* =====================================================================
+ * 抽屉
+ * ===================================================================== */
+(function wireShell() {
+  const sheet = $('sheet');
+  if ($('btnSheet') && sheet) $('btnSheet').onclick = function () { sheet.classList.add('open'); };
+  if ($('sheetMask') && sheet) $('sheetMask').onclick = function () { sheet.classList.remove('open'); };
+  if ($('sheetClose') && sheet) $('sheetClose').onclick = function () { sheet.classList.remove('open'); };
+
+  const spec = $('sheetSpec');
+  if ($('btnSpec') && spec) $('btnSpec').onclick = function () {
+    renderSpec();
+    spec.classList.add('open');
+  };
+  if ($('specMask') && spec) $('specMask').onclick = function () { spec.classList.remove('open'); };
+  if ($('specClose') && spec) $('specClose').onclick = function () { spec.classList.remove('open'); };
+})();
+
+/* 配件 / 珠子 切换 */
+(function wireTab() {
+  const btn = $('tabAcc');
+  if (!btn) return;
+  btn.onclick = function () {
+    S.libMode = (S.libMode === 'acc') ? 'bead' : 'acc';
+    btn.classList.toggle('on', S.libMode === 'acc');
+    btn.textContent = (S.libMode === 'acc') ? '← 珠子' : '配件';
+    const lb = $('libLabel');
+    if (lb) lb.textContent = (S.libMode === 'acc') ? '配件库' : '珠材库';
+    renderAll();
+  };
+})();
+
 $('wrist').oninput = renderAll;
 $('fit').onchange = renderAll;
 $('cord').onchange = renderAll;
 
-$('bMirror').onclick = () => {
+/* 一键排布 */
+$('bMirror').onclick = function () {
   if (!S.seq.length) return;
   const out = C.mirrorSeq(S.seq);
   if (!out) {
-    const lack = C.oddIds(S.seq)
-      .map(o => C.MAP[o.id].name + ' ' + o.d + 'mm').join('、');
+    const lack = C.oddIds(S.seq).map(function (o) {
+      return C.MAP[o.id].name + ' ' + o.d + 'mm';
+    }).join('、');
     alert('这套搭配排不成对称。\n对称要求每一种珠子都成双成对，现在 ' +
           lack + ' 是单数个，给它们各再加 1 颗就能对称了。');
     return;
   }
   S.seq = out; renderAll();
 };
-$('bGrad').onclick = () => {
-  const used = [...new Set(S.seq.map(b => b.id))];
+$('bGrad').onclick = function () {
+  const used = Array.from(new Set(S.seq.map(function (b) { return b.id; })));
   if (used.length < 2) { alert('至少用两种珠材才能做渐变'); return; }
   S.seq = C.gradientSeq(S.seq);
   renderAll();
 };
-$('bRand').onclick = () => {
+$('bRand').onclick = function () {
   if (!S.seq.length) return;
-  S.seq = S.seq.map(() => ({ id: C.BEADS[Math.floor(Math.random() * C.BEADS.length)].id, d: S.newD }));
+  S.seq = S.seq.map(function () {
+    return { id: C.BEADS[Math.floor(Math.random() * C.BEADS.length)].id, d: S.newD };
+  });
   renderAll();
 };
-$('bFit').onclick = () => {
+$('bFit').onclick = function () {
   const wrist = +$('wrist').value, ease = +$('fit').value, cord = $('cord').value;
   const target = cord === 'elastic' ? wrist + ease : wrist * C.PALM_RATIO + 5;
   const n = C.suggestCount(target, S.newD);
   const id = S.seq.length ? S.seq[Math.floor(S.seq.length / 2)].id : 'w';
-  S.seq = Array.from({ length:n }, () => ({ id, d:S.newD }));
+  S.seq = Array.from({ length: n }, function () { return { id: id, d: S.newD }; });
   renderAll();
 };
-$('bReset').onclick = () => { S.seq = []; S.sel = -1; renderAll(); };
+$('bReset').onclick = function () {
+  S.seq = []; S.sel = -1; S.trashMark = -1; renderAll();
+};
 
-/* ---- 随机成品：打开页面即有一条成品，避免预览区空白 ---- */
+/* 随机成品 */
 function targetOf() {
   const wrist = +$('wrist').value, ease = +$('fit').value, cord = $('cord').value;
   return cord === 'elastic' ? wrist + ease : wrist * C.PALM_RATIO + 5;
@@ -1387,20 +2694,570 @@ function loadPreset() {
   S.sel = -1;
   S.newD = r.sizes[r.sizes.length - 1];
   renderAll();
-  $('presetHint').textContent = '当前成品：' + r.name + ' · ' +
-    r.sizes.join('/') + 'mm · ' + S.seq.length + ' 颗';
+  if ($('presetHint')) {
+    $('presetHint').textContent = '当前成品：' + r.name + ' · ' +
+      r.sizes.join('/') + 'mm · ' + S.seq.length + ' 颗';
+  }
 }
 $('bPreset').onclick = loadPreset;
 
-/* 首屏就给出成品，而不是空环让人不知从哪下手 */
+/* 视口变化重绘（不走 calc，避免触发判重的副作用） */
+let rafId = 0;
+function relayout() {
+  cancelAnimationFrame(rafId);
+  rafId = requestAnimationFrame(function () {
+    try { draw(); renderSeq(); } catch (_) {}
+  });
+}
+window.addEventListener('resize', relayout);
+window.addEventListener('orientationchange', function () { setTimeout(relayout, 180); });
+if (window.visualViewport) window.visualViewport.addEventListener('resize', relayout);
+
+document.addEventListener('keydown', function (e) {
+  if (e.key === 'Escape') {
+    const a = $('sheet'), b = $('sheetSpec');
+    if (a) a.classList.remove('open');
+    if (b) b.classList.remove('open');
+  }
+});
+
 loadPreset();
+
 </script>
+<script>
+/* =============================================================
+ * APP 层：路由 / 订单推送 / 我的订单 / 店主后台
+ * 只做流程与接口，不碰配珠算法（那是 core/ui 的事）
+ * ============================================================= */
+(function () {
+  "use strict";
 
-<footer style="max-width:1220px;margin:0 auto;padding:0 24px 40px;font-size:12px;color:#8A8A85">
-  网页版演示（非小程序本体） · 小程序工程见
-  <a href="https://github.com/PiccataPro/crystal-bracelet-diy" style="color:#185FA5;text-decoration:none">GitHub 仓库</a>
-  · MIT License
-</footer>
+  var q = function (id) { return document.getElementById(id); };
+  var TOKEN_KEY = "bracelet_token";
+  var PHONE_KEY = "bracelet_phone";
 
+  var state = {
+    token: sessionStorage.getItem(TOKEN_KEY) || "",
+    orders: [],
+    q: "",
+    status: "all",
+    range: "all",
+    loading: false
+  };
+
+  /* ---------------- 小工具 ---------------- */
+  var toastTimer = 0;
+  function toast(msg) {
+    var el = q("toast");
+    if (!el) return;
+    el.textContent = msg;
+    el.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { el.classList.remove("show"); }, 2600);
+  }
+
+  function fmtTime(ms) {
+    var d = new Date(ms);
+    var p = function (n) { return n < 10 ? "0" + n : "" + n; };
+    return (d.getMonth() + 1) + "-" + p(d.getDate()) + " " + p(d.getHours()) + ":" + p(d.getMinutes());
+  }
+
+  function beadStyle(id) {
+    var url = (typeof beadBg === "function") ? beadBg(id) : "";
+    var hex = (typeof C !== "undefined" && C.MAP[id]) ? C.MAP[id].hex : "#DDD";
+    return "background-image:" + (url ? url : "none") + ";background-color:" + hex +
+           ";background-size:cover;background-position:center";
+  }
+
+  function beadName(id) {
+    return (typeof C !== "undefined" && C.MAP[id]) ? C.MAP[id].name : id;
+  }
+
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  function validPhone(v) { return /^1\d{10}$/.test(String(v).trim()); }
+
+  /* ---------------- 接口 ---------------- */
+  function api(path, opts) {
+    opts = opts || {};
+    var headers = opts.headers || {};
+    if (state.token) headers["Authorization"] = "Bearer " + state.token;
+    if (opts.body) headers["Content-Type"] = "application/json";
+    return fetch(path, {
+      method: opts.method || "GET",
+      headers: headers,
+      body: opts.body ? JSON.stringify(opts.body) : undefined,
+      cache: "no-store"
+    }).then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (j) {
+        if (r.ok && j.ok !== false) return j;
+        if (r.status === 401) { state.token = ""; sessionStorage.removeItem(TOKEN_KEY); }
+        throw new Error(j.error || ("请求失败 " + r.status));
+      });
+    });
+  }
+
+  /* =============================================================
+   * 路由：#/ → 首页，#/custom → 配珠台，#/orders → 我的订单，#/admin → 店主
+   * ============================================================= */
+  var VIEWS = { home: "viewHome", custom: "viewShop", orders: "viewMyOrders", admin: "viewAdmin" };
+
+  function routeName() {
+    var h = (location.hash || "").replace(/^#\/?/, "");
+    return VIEWS[h] ? h : "home";
+  }
+
+  function go(name) {
+    var target = "#/" + (name === "home" ? "" : name);
+    var cur = location.hash || "";
+    if (cur === target || (name === "home" && (cur === "" || cur === "#"))) {
+      applyRoute();
+    } else {
+      location.hash = target;
+    }
+  }
+
+  function applyRoute() {
+    var r = routeName();
+
+    if (r === "admin" && !state.token) {
+      /* 没登录直接跳回首页并弹登录，避免露出空后台 */
+      if (location.hash !== "#/") location.hash = "#/";
+      setTimeout(openLogin, 60);
+      return;
+    }
+
+    Object.keys(VIEWS).forEach(function (k) {
+      var el = q(VIEWS[k]);
+      if (el) el.hidden = (k !== r);
+    });
+
+    if (r === "custom") {
+      setTimeout(function () {
+        try { draw(); renderAll(); } catch (_) {}
+      }, 16);
+    }
+    if (r === "orders") renderMyOrders();
+    if (r === "admin") loadOrders();
+  }
+
+  window.addEventListener("hashchange", applyRoute);
+
+  /* ---------------- 首页按钮 ---------------- */
+  if (q("goCustom")) q("goCustom").onclick = function () { go("custom"); };
+  if (q("goOrders")) q("goOrders").onclick = function () { go("orders"); };
+  if (q("goAdminHome")) q("goAdminHome").onclick = function () { openLogin(); };
+  if (q("shopBack")) q("shopBack").onclick = function () { go("home"); };
+
+  /* =============================================================
+   * 一、客户：确认并推送
+   * ============================================================= */
+  function currentOrder() {
+    var wrist = +q("wrist").value;
+    var ease = +q("fit").value;
+    var cord = q("cord").value;
+    var beads = 0;
+    S.seq.forEach(function (b) { beads += priceOf(b.id, b.d); });
+    var fee = C.CORD_FEE[cord] || 0;
+    var L = layoutNow();
+    var stretch = 0;
+    if (L.ok && L.innerPerim) stretch = Math.round(C.stretchOf(L.innerPerim, wrist));
+    return {
+      seq: S.seq.map(function (b) { return { id: b.id, d: b.d }; }),
+      wrist: wrist, ease: ease, cord: cord,
+      beads: beads, fee: fee, total: beads + fee, stretch: stretch
+    };
+  }
+
+  function openConfirm() {
+    if (!S.seq.length) { toast("先加几颗珠子呀"); return; }
+
+    var o = currentOrder();
+    q("cfN").textContent = o.seq.length + " 颗";
+    q("cfSize").textContent = o.wrist + "mm · " + (o.cord === "elastic" ? "弹力线" : "蜡绳活结");
+    q("cfPrice").textContent = "¥" + o.total;
+
+    var box = q("cfBeads");
+    box.innerHTML = "";
+    o.seq.slice(0, 40).forEach(function (b) {
+      var d = document.createElement("div");
+      d.className = "bd";
+      d.setAttribute("style", beadStyle(b.id));
+      d.title = beadName(b.id) + " " + b.d + "mm";
+      box.appendChild(d);
+    });
+    if (o.seq.length > 40) {
+      var more = document.createElement("span");
+      more.style.cssText = "font-size:10px;color:#B79C8B;align-self:center";
+      more.textContent = "+" + (o.seq.length - 40);
+      box.appendChild(more);
+    }
+
+    var saved = sessionStorage.getItem(PHONE_KEY) || "";
+    if (saved && !q("cfPhone").value) q("cfPhone").value = saved;
+
+    q("cfErr").textContent = "";
+    q("modalConfirm").hidden = false;
+  }
+
+  function submitOrder() {
+    var btn = q("cfSubmit");
+    if (btn.disabled) return;
+
+    var phone = q("cfPhone").value.trim();
+    if (!validPhone(phone)) {
+      q("cfErr").textContent = "请填写 11 位手机号，店主才能联系到你";
+      q("cfPhone").focus();
+      return;
+    }
+
+    var o = currentOrder();
+    o.phone = phone;
+    o.name = q("cfName").value.trim();
+    o.note = q("cfNote").value.trim();
+
+    btn.disabled = true;
+    btn.textContent = "推送中…";
+    q("cfErr").textContent = "";
+
+    api("/api/orders", { method: "POST", body: o })
+      .then(function (r) {
+        sessionStorage.setItem(PHONE_KEY, phone);
+        q("modalConfirm").hidden = true;
+        q("cfNote").value = "";
+        toast("已推给莎傻啦 · " + r.id);
+      })
+      .catch(function (e) {
+        q("cfErr").textContent = e.message || "推送失败，请再试一次";
+      })
+      .finally(function () {
+        btn.disabled = false;
+        btn.textContent = "确认并推送";
+      });
+  }
+
+  if (q("btnConfirm")) q("btnConfirm").onclick = openConfirm;
+  if (q("cfSubmit")) q("cfSubmit").onclick = submitOrder;
+  if (q("cfCancel")) q("cfCancel").onclick = function () { q("modalConfirm").hidden = true; };
+  if (q("cfMask")) q("cfMask").onclick = function () { q("modalConfirm").hidden = true; };
+
+  /* =============================================================
+   * 二、我的订单（顾客按手机号自查）
+   * ============================================================= */
+  function renderMyOrders() {
+    var saved = sessionStorage.getItem(PHONE_KEY) || "";
+    if (saved && !q("myPhone").value) q("myPhone").value = saved;
+    if (saved) queryMyOrders(saved);
+    else {
+      q("myList").innerHTML =
+        '<div class="emptybox"><img class="sasa-mini" src="assets/sasa/hero.png" alt=""><p>输入下单时填的手机号<br>就能看到自己的订单</p></div>';
+    }
+  }
+
+  function queryMyOrders(phone) {
+    if (!validPhone(phone)) {
+      q("myList").innerHTML =
+        '<div class="emptybox"><div class="emo">📱</div><p>请填 11 位手机号</p></div>';
+      return;
+    }
+    q("myList").innerHTML = '<div class="emptybox"><p>查询中…</p></div>';
+
+    api("/api/my-orders", { method: "POST", body: { phone: phone } })
+      .then(function (r) {
+        sessionStorage.setItem(PHONE_KEY, phone);
+        var list = r.orders || [];
+        if (!list.length) {
+          q("myList").innerHTML =
+            '<div class="emptybox"><img class="sasa-mini" src="assets/sasa/hero.png" alt=""><p>这个手机号还没有订单<br>去配一条试试？</p></div>';
+          return;
+        }
+        q("myList").innerHTML = list.map(function (o) {
+          var beads = (o.seq || []).slice(0, 14).map(function (b) {
+            return '<i class="bd" style="' + beadStyle(b.id) + '"></i>';
+          }).join("");
+          var more = (o.seq || []).length > 14
+            ? '<i style="flex:0 0 auto;font-size:9px;color:#B79C8B;align-self:center">+' + ((o.seq || []).length - 14) + '</i>'
+            : "";
+          var st = o.status === "archived" ? "已完成" : "待店主确认";
+          var tagCls = o.status === "archived" ? "a" : "p";
+          return '<div class="ordercard">' +
+            '<div class="oc-top">' +
+              '<span class="tag ' + tagCls + '">' + st + '</span>' +
+              '<span class="oc-id">' + o.id + '</span>' +
+              '<span class="oc-time">' + fmtTime(o.createdAt) + '</span>' +
+            '</div>' +
+            '<div class="oc-mid">' +
+              '<div class="oc-beads">' + beads + more + '</div>' +
+              '<div class="oc-price">¥' + o.total + '</div>' +
+            '</div>' +
+            '<div class="oc-meta">' + (o.seq || []).length + ' 颗 · 手围 ' + o.wrist +
+              'mm · ' + (o.cord === "elastic" ? "弹力线" : "蜡绳活结") +
+              (o.note ? ' · 「' + esc(o.note) + '」' : '') + '</div>' +
+          '</div>';
+        }).join("");
+      })
+      .catch(function (e) {
+        q("myList").innerHTML =
+          '<div class="emptybox"><div class="emo">🥺</div><p>' + esc(e.message || "查询失败") + '</p></div>';
+      });
+  }
+
+  if (q("myQuery")) q("myQuery").onclick = function () { queryMyOrders(q("myPhone").value.trim()); };
+  if (q("myPhone")) q("myPhone").addEventListener("keydown", function (e) {
+    if (e.key === "Enter") queryMyOrders(q("myPhone").value.trim());
+  });
+  if (q("myBack")) q("myBack").onclick = function () { go("home"); };
+  if (q("myNew")) q("myNew").onclick = function () { go("custom"); };
+
+  /* =============================================================
+   * 三、店主登录
+   * ============================================================= */
+  function openLogin() {
+    if (state.token) { go("admin"); return; }
+    q("lgErr").textContent = "";
+    q("modalLogin").hidden = false;
+    setTimeout(function () { q("lgUser").focus(); }, 120);
+  }
+
+  function doLogin() {
+    var btn = q("lgSubmit");
+    if (btn.disabled) return;
+    var u = q("lgUser").value.trim();
+    var p = q("lgPass").value;
+
+    if (!u || !p) { q("lgErr").textContent = "账号和密码都要填"; return; }
+
+    btn.disabled = true;
+    btn.textContent = "进入中…";
+    q("lgErr").textContent = "";
+
+    api("/api/login", { method: "POST", body: { user: u, pass: p } })
+      .then(function (r) {
+        state.token = r.token;
+        sessionStorage.setItem(TOKEN_KEY, r.token);
+        q("modalLogin").hidden = true;
+        q("lgUser").value = "";
+        q("lgPass").value = "";
+        go("admin");
+      })
+      .catch(function (e) {
+        q("lgErr").textContent = e.message || "登录失败";
+      })
+      .finally(function () {
+        btn.disabled = false;
+        btn.textContent = "进入";
+      });
+  }
+
+  if (q("btnAdmin")) q("btnAdmin").onclick = openLogin;
+  if (q("lgSubmit")) q("lgSubmit").onclick = doLogin;
+  if (q("lgCancel")) q("lgCancel").onclick = function () { q("modalLogin").hidden = true; };
+  if (q("lgMask")) q("lgMask").onclick = function () { q("modalLogin").hidden = true; };
+  if (q("lgPass")) q("lgPass").addEventListener("keydown", function (e) { if (e.key === "Enter") doLogin(); });
+  if (q("lgUser")) q("lgUser").addEventListener("keydown", function (e) { if (e.key === "Enter") q("lgPass").focus(); });
+
+  /* =============================================================
+   * 四、后台
+   * ============================================================= */
+  function loadOrders() {
+    if (state.loading) return;
+    state.loading = true;
+    var url = "/api/orders?status=" + state.status + "&range=" + state.range +
+              "&q=" + encodeURIComponent(state.q);
+
+    api(url)
+      .then(function (r) {
+        state.orders = r.orders || [];
+        renderStats(r.stats || {});
+        renderList();
+      })
+      .catch(function (e) {
+        state.orders = [];
+        renderStats({});
+        q("adList").innerHTML =
+          '<div class="emptybox"><div class="emo">🥺</div><p>' +
+          esc(e.message || "读取失败") + '<br>请重新登录试试</p></div>';
+      })
+      .finally(function () { state.loading = false; });
+  }
+
+  function renderStats(s) {
+    q("stAll").textContent = s.total || 0;
+    q("stPend").textContent = s.pending || 0;
+    q("stArch").textContent = s.archived || 0;
+  }
+
+  function renderList() {
+    var box = q("adList");
+    if (!state.orders.length) {
+      box.innerHTML = '<div class="emptybox"><img class="sasa-mini" src="assets/sasa/hero.png" alt=""><p>还没有订单<br>客人在配珠页点「确认并推送」后会出现在这里</p></div>';
+      return;
+    }
+
+    var html = state.orders.map(function (o, idx) {
+      var beads = (o.seq || []).slice(0, 12).map(function (b) {
+        return '<i class="bd" style="' + beadStyle(b.id) + '"></i>';
+      }).join("");
+      var more = (o.seq || []).length > 12
+        ? '<i style="flex:0 0 auto;font-size:9px;color:#B79C8B;align-self:center">+' + ((o.seq || []).length - 12) + '</i>'
+        : "";
+      var meta = [];
+      if (o.wrist) meta.push("手围 " + o.wrist + "mm");
+      if (o.cord) meta.push(o.cord === "elastic" ? "弹力线" : "蜡绳活结");
+      if (o.stretch !== undefined) meta.push("拉伸 " + o.stretch + "%");
+      if (o.phone) meta.push("📱 " + esc(o.phone));
+      if (o.name) meta.push(esc(o.name));
+      if (o.note) meta.push("「" + esc(o.note) + "」");
+
+      var acts = '<button data-act="detail" data-i="' + idx + '">详情</button>';
+      if (o.status === "pending") {
+        acts += '<button class="ok" data-act="archive" data-i="' + idx + '">归档</button>';
+      } else {
+        acts += '<button data-act="restore" data-i="' + idx + '">撤回</button>';
+      }
+      acts += '<button class="danger" data-act="del" data-i="' + idx + '">删除</button>';
+
+      return '<div class="ordercard">' +
+        '<div class="oc-top">' +
+          '<span class="tag ' + (o.status === "pending" ? "p" : "a") + '">' +
+            (o.status === "pending" ? "待处理" : "已归档") + '</span>' +
+          '<span class="oc-id">' + o.id + '</span>' +
+          '<span class="oc-time">' + fmtTime(o.createdAt) + '</span>' +
+        '</div>' +
+        '<div class="oc-mid">' +
+          '<div class="oc-beads">' + beads + more + '</div>' +
+          '<div class="oc-price">¥' + o.total + '</div>' +
+        '</div>' +
+        '<div class="oc-meta">' + (o.seq || []).length + ' 颗 · ' + meta.join(" · ") + '</div>' +
+        '<div class="oc-acts">' + acts + '</div>' +
+      '</div>';
+    }).join("");
+
+    box.innerHTML = html;
+  }
+
+  if (q("adList")) q("adList").addEventListener("click", function (e) {
+    var btn = e.target.closest("button[data-act]");
+    if (!btn) return;
+    var o = state.orders[+btn.dataset.i];
+    if (!o) return;
+    var act = btn.dataset.act;
+
+    if (act === "detail") return showDetail(o);
+
+    if (act === "del") {
+      if (!confirm("删除订单 " + o.id + "？\n删除后无法恢复，只用于清理失效订单。")) return;
+      api("/api/orders/" + o.id, { method: "DELETE" })
+        .then(function () { toast("已删除 " + o.id); loadOrders(); })
+        .catch(function (err) { toast(err.message || "删除失败"); });
+      return;
+    }
+
+    var endpoint = act === "archive" ? "/archive" : "/restore";
+    api("/api/orders/" + o.id + endpoint, { method: "POST" })
+      .then(function () {
+        toast(act === "archive" ? "已归档 · " + o.id : "已撤回 · " + o.id);
+        loadOrders();
+      })
+      .catch(function (err) { toast(err.message || "操作失败"); });
+  });
+
+  function showDetail(o) {
+    q("dtTitle").textContent = o.id;
+    q("dtSub").textContent = fmtTime(o.createdAt) + " · " +
+      (o.status === "pending" ? "待处理" : "已归档");
+
+    var rows = [];
+    rows.push(["颗数", (o.seq || []).length + " 颗"]);
+    rows.push(["手围 / 绳材", o.wrist + "mm · " + (o.cord === "elastic" ? "弹力线" : "蜡绳活结")]);
+    rows.push(["珠材", o.beads + " 元"]);
+    rows.push(["绳费", o.fee + " 元"]);
+    rows.push(["合计", "¥" + o.total]);
+    if (o.stretch !== undefined) rows.push(["过掌拉伸", o.stretch + "%"]);
+    if (o.phone) rows.push(["手机号", esc(o.phone)]);
+    if (o.name) rows.push(["客人", esc(o.name)]);
+    if (o.note) rows.push(["备注", esc(o.note)]);
+
+    var bySize = {};
+    (o.seq || []).forEach(function (b) {
+      var k = beadName(b.id) + " " + b.d + "mm";
+      bySize[k] = (bySize[k] || 0) + 1;
+    });
+    var desc = Object.keys(bySize).map(function (k) { return k + " ×" + bySize[k]; }).join("、");
+
+    q("dtBody").innerHTML =
+      rows.map(function (r) {
+        return '<div class="line"><span>' + r[0] + '</span><b>' + r[1] + '</b></div>';
+      }).join("") +
+      '<div class="beads">' +
+        (o.seq || []).map(function (b) { return '<i class="bd" style="' + beadStyle(b.id) + '"></i>'; }).join("") +
+      '</div>' +
+      '<div style="font-size:10px;color:#B79C8B;margin-top:9px;line-height:1.6">' + desc + '</div>';
+
+    q("modalDetail").hidden = false;
+  }
+
+  if (q("dtClose")) q("dtClose").onclick = function () { q("modalDetail").hidden = true; };
+  if (q("dtMask")) q("dtMask").onclick = function () { q("modalDetail").hidden = true; };
+
+  if (q("adBack")) q("adBack").onclick = function () { go("home"); };
+  if (q("adLogout")) q("adLogout").onclick = function () {
+    state.token = "";
+    sessionStorage.removeItem(TOKEN_KEY);
+    go("home");
+    toast("已退出店主模式");
+  };
+
+  /* 搜索（防抖） */
+  var searchTimer = 0;
+  if (q("adSearch")) q("adSearch").addEventListener("input", function (e) {
+    clearTimeout(searchTimer);
+    var v = e.target.value;
+    searchTimer = setTimeout(function () { state.q = v.trim(); loadOrders(); }, 300);
+  });
+
+  function wireChips(boxId, key) {
+    var box = q(boxId);
+    if (!box) return;
+    box.addEventListener("click", function (e) {
+      var b = e.target.closest(".chip");
+      if (!b) return;
+      Array.prototype.forEach.call(box.children, function (c) { c.classList.remove("on"); });
+      b.classList.add("on");
+      state[key] = b.dataset.v;
+      loadOrders();
+    });
+  }
+  wireChips("adStatus", "status");
+  wireChips("adRange", "range");
+
+  /* =============================================================
+   * 启动：先探一次后端。
+   * GitHub Pages 这类纯静态托管没有 /api，订单会 404。与其让客人
+   * 点「确认并推送」后看到报错，不如提前说清楚这是演示版。
+   * ============================================================= */
+  fetch("/api/health", { cache: "no-store" })
+    .then(function (r) { if (!r.ok) throw new Error("no api"); })
+    .catch(function () {
+      var acts = document.querySelector(".homeacts");
+      if (acts && !q("demoNote")) {
+        var tip = document.createElement("div");
+        tip.id = "demoNote";
+        tip.style.cssText =
+          "margin-top:14px;font-size:10.5px;line-height:1.7;color:#B4553C;" +
+          "background:#FFF0EA;border-radius:12px;padding:8px 12px;text-align:center";
+        tip.innerHTML = "当前是<b>静态演示版</b>（无订单后端）<br>下单请访问正式站点";
+        acts.parentNode.insertBefore(tip, acts.nextSibling);
+      }
+    });
+
+  applyRoute();
+})();
+
+</script>
 </body>
 </html>
