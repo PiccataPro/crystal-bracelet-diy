@@ -1,0 +1,38 @@
+[Unit]
+Description=Bracelet Order API (水晶手串订单服务)
+Documentation=https://bracelet.piccata.online:41888/
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/opt/bracelet
+Environment=BRACELET_DB=/var/lib/bracelet/orders.db
+Environment=BRACELET_SECRET=/var/lib/bracelet/.secret
+Environment=BRACELET_PORT=41890
+# 真实账号密码只存在服务器上，不进公开仓库
+Environment=BRACELET_ADMIN_USER=马莉莎
+Environment=BRACELET_ADMIN_PASS=20061121
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/usr/bin/python3 /opt/bracelet/server.py
+Restart=always
+RestartSec=3
+StartLimitIntervalSec=0
+
+# 收紧权限：只允许写订单数据目录，其余文件系统只读
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/bracelet
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+MemoryMax=256M
+
+[Install]
+WantedBy=multi-user.target

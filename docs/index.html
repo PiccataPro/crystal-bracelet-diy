@@ -568,6 +568,53 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;bac
 .hp.warn{background:#FFF1D4;color:#A87B22}
 .hp.bad{background:#FFE3DB;color:#B04A32}
 
+/* ================= 后台页签 ================= */
+.admintabs{display:flex;gap:7px;padding:0 16px 9px;flex:0 0 auto}
+.atab{
+  flex:1;border-radius:12px;padding:9px 0;font-size:12px;font-weight:800;
+  background:#fff;color:var(--ink-3);
+  box-shadow:0 2px 9px rgba(214,164,136,.14),inset 0 0 0 1px var(--line);
+  transition:.14s;
+}
+.atab.on{background:linear-gradient(160deg,#FFB49B,#F07F5E);color:#fff;
+  box-shadow:0 4px 13px rgba(240,127,94,.3)}
+
+/* ================= 珠材管理 ================= */
+#adCatalogPanel{flex:1 1 auto;min-height:0;display:flex;flex-direction:column}
+.cathint{padding:0 18px 10px;font-size:10.5px;color:var(--ink-3);line-height:1.6;flex:0 0 auto}
+.catgrid{
+  flex:1 1 auto;min-height:0;overflow-y:auto;
+  display:grid;grid-template-columns:repeat(3,1fr);gap:9px;
+  padding:0 16px calc(20px + env(safe-area-inset-bottom));
+  -webkit-overflow-scrolling:touch;
+}
+.catgroup{
+  grid-column:1/-1;font-size:10px;font-weight:800;color:var(--ink-3);
+  letter-spacing:.1em;margin:2px 0 -2px;display:flex;align-items:center;gap:6px;
+}
+.catgroup::before{content:"";width:6px;height:6px;border-radius:2px;background:var(--peach);transform:rotate(45deg)}
+.catitem{
+  background:#fff;border-radius:14px;padding:9px 6px 8px;text-align:center;
+  box-shadow:0 2px 10px rgba(214,164,136,.14),inset 0 0 0 1px var(--line);
+  transition:.16s;position:relative;
+}
+.catitem.off{background:#F7F3EF;box-shadow:inset 0 0 0 1px rgba(160,140,125,.18)}
+.catitem.off .ci-dot{filter:grayscale(.85);opacity:.45}
+.catitem.off .ci-nm{color:#B0A296}
+.catitem .ci-dot{
+  width:40px;height:40px;border-radius:50%;margin:0 auto 6px;
+  background-size:cover;background-position:center;
+  box-shadow:inset 0 0 0 1px rgba(160,140,125,.28);
+  transition:.16s;
+}
+.catitem .ci-nm{font-size:10.5px;font-weight:800;color:var(--ink-2);letter-spacing:.02em}
+.catitem .ci-sw{
+  margin-top:6px;border-radius:999px;padding:3px 0;font-size:9.5px;font-weight:800;
+  background:#DFF3E8;color:#2F7D5C;letter-spacing:.04em;
+}
+.catitem.off .ci-sw{background:#EDE7E1;color:#9C8B7E}
+
+
 /* ================= 店主形象（莎傻） ================= */
 .homehero{position:relative;display:grid;place-items:center;margin-bottom:10px}
 .homehero .sasa{
@@ -816,7 +863,13 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;bac
     <button class="abtn" id="adLogout">退出</button>
   </div>
 
-  <div class="stats">
+    <div class="admintabs">
+    <button class="atab on" data-tab="orders">订单</button>
+    <button class="atab" data-tab="catalog">珠材管理</button>
+  </div>
+
+  <div id="adOrdersPanel" style="display:flex;flex-direction:column;flex:1;min-height:0">
+<div class="stats">
     <div class="stat"><div class="n" id="stAll">0</div><div class="l">全部</div></div>
     <div class="stat p"><div class="n" id="stPend">0</div><div class="l">待处理</div></div>
     <div class="stat a"><div class="n" id="stArch">0</div><div class="l">已归档</div></div>
@@ -841,7 +894,13 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;bac
   </div>
 
   <div class="orderlist" id="adList"></div>
-</div>
+  </div><!-- /adOrdersPanel -->
+
+  <div id="adCatalogPanel" hidden style="display:none">
+    <div class="cathint">关掉的珠材不会出现在客人的选珠菜单里，已配好的手串不受影响</div>
+    <div class="catgrid" id="catGrid"></div>
+  </div>
+</div><!-- /viewAdmin -->
 
 <!-- ============ 订单详情 ============ -->
 <div class="modal" id="modalDetail" hidden>
@@ -1797,7 +1856,9 @@ function beadImage(id) {
 }
 function beadBg(id) {
   const src = BEAD_IMG[id];
-  return src ? ('url("' + src + '")') : '';
+  /* ⚠️ 必须用单引号：这个字符串会被拼进 style="..." 里（订单卡片、珠材管理），
+     双引号会把 HTML 属性提前闭合，结果图片永远显示不出来、只剩渐变色。 */
+  return src ? ("url('" + src + "')") : '';
 }
 
 /* ===== 新增珠材与配件 =====
@@ -1844,6 +1905,25 @@ function priceOf(id, d) {
   return C.priceOf(id, d);
 }
 function isAcc(id) { return !!ACC_MAP[id]; }
+
+/* 下架的珠材/配件 id。服务端只存「有状态变更」的条目，缺省上架。 */
+const OFF = new Set();
+
+function loadCatalog() {
+  return fetch("/api/catalog", { cache: "no-store" })
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (d) {
+      if (!d || !d.off) return;
+      OFF.clear();
+      d.off.forEach(function (x) { OFF.add(x); });
+    })
+    .catch(function () { /* 没后端（静态托管）时全部当上架 */ });
+}
+
+/* 客人菜单只列上架项 */
+function libList(acc) {
+  return (acc ? ACCESSORIES : C.BEADS).filter(function (b) { return !OFF.has(b.id); });
+}
 
 /* ========= 状态 ========= */
 const S = {
@@ -2106,18 +2186,21 @@ cv.addEventListener('pointerdown', function (e) {
     return;
   }
 
+  /* ⚠️ 长按触发后**不能**把 S.press 置空：
+     否则手指继续移动时，pointermove 里那段「按下未拖拽」的判断会直接
+     return，客人只能先松手、再按一次才拖得动——「长按后卡住」就是这么来的。
+     现在只打一个 fired 标记，移动时照样能转成拖拽。 */
   S.press = {
-    idx: i, x0: p.x, y0: p.y,
+    idx: i, x0: p.x, y0: p.y, fired: false,
     timer: setTimeout(function () {
       if (!S.press) return;
-      const idx = S.press.idx;
-      S.press = null;
-      S.trashMark = idx;
-      S.sel = idx;
+      S.press.fired = true;
+      S.trashMark = S.press.idx;
+      S.sel = S.press.idx;
       draw();
-      tag('点红叉删掉这颗');
+      tag('松手按住不动＝删除 · 继续拖＝换位');
       if (navigator.vibrate) navigator.vibrate(14);
-    }, 480)
+    }, 550)
   };
 
   try { cv.setPointerCapture(e.pointerId); } catch (_) {}
@@ -2129,12 +2212,18 @@ cv.addEventListener('pointermove', function (e) {
 
   /* 按下未长按：先判断是否该进入拖拽 */
   if (S.press && !S.drag) {
-    if (Math.hypot(p.x - S.press.x0, p.y - S.press.y0) > 8) {
+    if (Math.hypot(p.x - S.press.x0, p.y - S.press.y0) > 6) {
       const from = S.press.idx;
       const x0 = S.press.x0, y0 = S.press.y0;   // 按下点，不是当前点
       const L0 = layoutNow();
       const it = L0.ok ? L0.items[from] : null;
+      /* 若是长按后才决定拖，把删除浮标收起来，避免拖着一颗红叉跑 */
+      const hadMark = (S.trashMark === from);
       clearPress();
+      if (hadMark) {
+        S.trashMark = -1;
+        tag('拖动重排 · 拖到别珠上互调');
+      }
       if (!it) return;
       /* 偏移必须用「按下点 − 珠心」。若用当前点，珠子会永远落后手指
          一个触发距离（约 8–10px），拖起来黏手。 */
@@ -2263,7 +2352,15 @@ function renderLib() {
   box.innerHTML = '';
 
   const acc = (S.libMode === 'acc');
-  const list = acc ? ACCESSORIES : C.BEADS;
+  const list = libList(acc);
+
+  if (!list.length) {
+    const tip = document.createElement('div');
+    tip.style.cssText = 'grid-column:1/-1;color:#B79C8B;font-size:11px;padding:16px 6px';
+    tip.textContent = acc ? '配件暂时都没有货' : '珠材暂时都没有货，联系店主补货吧';
+    box.appendChild(tip);
+    return;
+  }
 
   list.forEach(function (b) {
     const d = acc ? b.d : S.newD;
@@ -2690,7 +2787,16 @@ function targetOf() {
 }
 function loadPreset() {
   const r = C.randomPreset(targetOf());
-  S.seq = r.seq;
+  /* randomPreset 只看 core 的 BEADS，不知道谁下架了；
+     生成后把下架的换成同直径的在售珠材，避免一进来就出现缺货珠 */
+  const pool = libList(false);
+  if (pool.length) {
+    S.seq = r.seq.map(function (b) {
+      return OFF.has(b.id) ? { id: pool[0].id, d: b.d } : b;
+    });
+  } else {
+    S.seq = r.seq;
+  }
   S.sel = -1;
   S.newD = r.sizes[r.sizes.length - 1];
   renderAll();
@@ -2721,7 +2827,9 @@ document.addEventListener('keydown', function (e) {
   }
 });
 
-loadPreset();
+loadCatalog().then(function () {
+  loadPreset();
+});
 
 </script>
 <script>
@@ -2842,7 +2950,11 @@ loadPreset();
       }, 16);
     }
     if (r === "orders") renderMyOrders();
-    if (r === "admin") loadOrders();
+    if (r === "admin") {
+      loadOrders();
+      renderCatGrid();
+      loadCatalog().then(renderCatGrid);   // 换设备登录也要看到最新上下架
+    }
   }
 
   window.addEventListener("hashchange", applyRoute);
@@ -3063,6 +3175,71 @@ loadPreset();
   /* =============================================================
    * 四、后台
    * ============================================================= */
+  /* =============================================================
+   * 珠材管理：上下架
+   * 状态存在服务端 catalog 表，客人端启动时拉取过滤
+   * ============================================================= */
+  function renderCatGrid() {
+    var box = q("catGrid");
+    if (!box) return;
+
+    var groups = [
+      { name: "水晶珠材 · " + C.BEADS.length, list: C.BEADS },
+      { name: "配件 · " + ACCESSORIES.length, list: ACCESSORIES }
+    ];
+
+    box.innerHTML = groups.map(function (g) {
+      return '<div class="catgroup">' + g.name + '</div>' +
+        g.list.map(function (b) {
+          var on = !OFF.has(b.id);
+          var url = (typeof beadBg === "function") ? beadBg(b.id) : "";
+          var hex = (C.MAP[b.id] || {}).hex || "#ddd";
+          var style = url
+            ? ("background-image:" + url + ";background-color:" + hex + ";background-size:cover;background-position:center")
+            : ("background:" + hex);
+          return '<div class="catitem' + (on ? "" : " off") + '" data-id="' + b.id + '">' +
+            '<div class="ci-dot" style="' + style + '"></div>' +
+            '<div class="ci-nm">' + b.name + '</div>' +
+            '<div class="ci-sw">' + (on ? "在售" : "已下架") + '</div>' +
+          '</div>';
+        }).join("");
+    }).join("");
+  }
+
+  if (q("catGrid")) q("catGrid").addEventListener("click", function (e) {
+    var it = e.target.closest(".catitem");
+    if (!it) return;
+    var id = it.dataset.id;
+    var nextOn = OFF.has(id);   // 当前下架 → 点了就该上架
+
+    api("/api/catalog", { method: "POST", body: { id: id, enabled: nextOn } })
+      .then(function (r) {
+        if (r.enabled) OFF.delete(id); else OFF.add(id);
+        renderCatGrid();
+        renderLib();               // 客人菜单即时同步
+        var b = C.MAP[id] || {};
+        toast((b.name || id) + (r.enabled ? " 已上架" : " 已下架"));
+      })
+      .catch(function (err) { toast(err.message || "操作失败"); });
+  });
+
+  /* 页签切换 */
+  Array.prototype.forEach.call(document.querySelectorAll(".atab"), function (btn) {
+    btn.onclick = function () {
+      var t = btn.dataset.tab;
+      Array.prototype.forEach.call(document.querySelectorAll(".atab"), function (b) {
+        b.classList.toggle("on", b === btn);
+      });
+      var op = q("adOrdersPanel"), cp = q("adCatalogPanel");
+      if (op) op.style.display = (t === "orders") ? "flex" : "none";
+      if (cp) {
+        cp.hidden = (t !== "catalog");
+        cp.style.display = (t === "catalog") ? "flex" : "none";
+      }
+      if (t === "catalog") renderCatGrid();
+    };
+  });
+
   function loadOrders() {
     if (state.loading) return;
     state.loading = true;
