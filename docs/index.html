@@ -1899,6 +1899,14 @@ NEW_BEADS.forEach(function (b) {
 });
 ACCESSORIES.forEach(function (a) { C.MAP[a.id] = a; });
 
+/* 只保留有实物渲染图的珠材。
+ * 剩下那几种（紫水晶/茶晶/黄水晶/青金石/藏青/红玛瑙/珍珠/草莓晶）只有 CSS 渐变色，
+ * 是「示意图」不是真图，混在实拍珠子里质感差一截 —— 直接从菜单摘掉。
+ * 注意：只过滤菜单列表 C.BEADS，C.MAP 里全部保留，
+ *       否则历史订单里出现这些 id 时渲染会取不到颜色而崩。 */
+const HAS_IMG = new Set(Object.keys(BEAD_IMG));
+C.BEADS = C.BEADS.filter(function (b) { return HAS_IMG.has(b.id); });
+
 /** 统一计价：配件按个，其余走 core 的珠径阶梯价。 */
 function priceOf(id, d) {
   if (ACC_MAP[id]) return ACC_MAP[id].price;
@@ -2790,12 +2798,30 @@ function loadPreset() {
   /* randomPreset 只看 core 的 BEADS，不知道谁下架了；
      生成后把下架的换成同直径的在售珠材，避免一进来就出现缺货珠 */
   const pool = libList(false);
+  const okSet = new Set(pool.map(function (b) { return b.id; }));
+
   if (pool.length) {
+    /* randomPreset 用的是 core 内部闭包里的全量 BEADS，不知道谁没图/谁下架了。
+       替换时不能一律塞 pool[0]——那样整串会变成同一种白水晶，很难看。
+       按 Lab 色差找最接近的在售珠，并优先选这串里还没出现过的，保住原配色的层次。 */
+    const used = {};
     S.seq = r.seq.map(function (b) {
-      return OFF.has(b.id) ? { id: pool[0].id, d: b.d } : b;
+      if (okSet.has(b.id)) {
+        used[b.id] = (used[b.id] || 0) + 1;
+        return b;
+      }
+      const orig = C.MAP[b.id];
+      const cands = pool.slice().sort(function (x, y) {
+        if (!orig || !orig.lab) return 0;
+        return C.ciede2000(orig.lab, C.MAP[x.id].lab) -
+               C.ciede2000(orig.lab, C.MAP[y.id].lab);
+      });
+      const pick = cands.filter(function (c) { return !used[c.id]; })[0] || cands[0];
+      used[pick.id] = (used[pick.id] || 0) + 1;
+      return { id: pick.id, d: b.d };
     });
   } else {
-    S.seq = r.seq;
+    S.seq = r.seq.filter(function (b) { return HAS_IMG.has(b.id); });
   }
   S.sel = -1;
   S.newD = r.sizes[r.sizes.length - 1];
