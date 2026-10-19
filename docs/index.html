@@ -376,6 +376,29 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;bac
 .summary .beads{display:flex;flex-wrap:wrap;gap:4px;margin-top:9px;padding-top:9px;border-top:1px dashed var(--line)}
 .summary .bd{flex:0 0 auto;width:16px;height:16px;border-radius:50%;background-size:cover;
   box-shadow:0 1px 2px rgba(0,0,0,.14),inset 0 0 0 1px rgba(160,140,125,.35)}
+/* 备货清单：按材质×尺寸聚合，大图 + 数量，店主照单抓珠 */
+.pk-title{
+  margin-top:12px;padding-top:11px;border-top:1px dashed var(--line);
+  font-size:11px;font-weight:800;color:var(--ink-2);letter-spacing:.06em;
+  display:flex;align-items:center;gap:6px;
+}
+.pk-title::before{content:"";width:6px;height:6px;border-radius:2px;background:var(--peach);transform:rotate(45deg)}
+.pk-list{display:flex;flex-direction:column;gap:7px;margin-top:9px}
+.pk-row{
+  display:flex;align-items:center;gap:10px;
+  background:#FFFDF9;border-radius:14px;padding:8px 11px;
+  box-shadow:inset 0 0 0 1px var(--line);
+}
+.pk-dot{
+  flex:0 0 auto;width:40px;height:40px;border-radius:50%;background-size:cover;
+  background-position:center;box-shadow:inset 0 0 0 1px rgba(160,140,125,.3),0 2px 5px rgba(120,80,60,.16);
+}
+.pk-nm{flex:1 1 auto;min-width:0;font-size:13px;font-weight:800;color:var(--ink)}
+.pk-nm em{font-style:normal;font-size:10.5px;font-weight:700;color:var(--ink-3);margin-left:6px}
+.pk-num{
+  flex:0 0 auto;font-size:16px;font-weight:800;color:var(--peach-d);
+  font-variant-numeric:tabular-nums;
+}
 
 /* ================= 管理后台 ================= */
 .view.admin{background:linear-gradient(180deg,#FFFBF5,#FFF3E6)}
@@ -589,7 +612,7 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;bac
   -webkit-overflow-scrolling:touch;
 }
 .catrow{
-  display:flex;align-items:center;gap:10px;
+  display:flex;align-items:center;flex-wrap:wrap;gap:10px;
   background:#fff;border-radius:14px;padding:8px 11px;
   box-shadow:0 2px 10px rgba(214,164,136,.14),inset 0 0 0 1px var(--line);
 }
@@ -610,6 +633,26 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;bac
 .catrow .sz.off{background:#F2EDE8;color:#B6A99C;text-decoration:line-through}
 .catrow .sz:active{transform:scale(.9)}
 .catrow .sz:disabled{opacity:.6}
+/* 店主改价：每个尺寸一个小价格框，失焦即存。
+   窄屏放不下整行，价格框独占第二行铺满（flex:1 1 100% 强制换行）。 */
+.catrow .pzs{display:flex;gap:6px;flex:1 1 100%;justify-content:space-between}
+.catrow .pz{
+  display:flex;align-items:center;justify-content:center;flex:1;
+  font-size:10px;font-weight:800;color:#B6A99C;
+  background:#F6F1EB;border-radius:8px;padding:0 4px;height:31px;
+  box-shadow:inset 0 0 0 1px var(--line);transition:.12s;
+}
+.catrow .pz.cus{background:#FFF3E4;color:#C77A2B}
+.catrow .pz.dis{opacity:.45}
+.catrow .pz:focus-within{box-shadow:inset 0 0 0 1.5px var(--peach)}
+.catrow .pz-in{
+  width:34px;border:none;outline:none;background:transparent;padding:0;
+  font-size:11px;font-weight:800;color:var(--ink);text-align:right;
+  font-variant-numeric:tabular-nums;-moz-appearance:textfield;appearance:textfield;
+}
+.catrow .pz-in::-webkit-outer-spin-button,
+.catrow .pz-in::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.catrow .pz-in:disabled{color:#B6A99C}
 .catgroup{
   grid-column:1/-1;font-size:10px;font-weight:800;color:var(--ink-3);
   letter-spacing:.1em;margin:2px 0 -2px;display:flex;align-items:center;gap:6px;
@@ -919,7 +962,7 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;bac
   </div><!-- /adOrdersPanel -->
 
   <div id="adCatalogPanel" hidden style="display:none">
-    <div class="cathint">关掉的珠材不会出现在客人的选珠菜单里，已配好的手串不受影响</div>
+    <div class="cathint">绿色数字 = 上/下架该尺寸；¥框直接改价，改完点别处即保存（清空恢复默认价）。关掉的珠材不会出现在客人的选珠菜单里，已配好的手串不受影响</div>
     <div class="catgrid" id="catGrid"></div>
   </div>
 </div><!-- /viewAdmin -->
@@ -1945,8 +1988,10 @@ ACCESSORIES.forEach(function (a) { C.MAP[a.id] = a; });
 const HAS_IMG = new Set(Object.keys(BEAD_IMG));
 C.BEADS = C.BEADS.filter(function (b) { return HAS_IMG.has(b.id); });
 
-/** 统一计价：配件按个，其余走 core 的珠径阶梯价。 */
+/** 统一计价：店主改过价的 SKU 用覆盖价，否则配件按个、其余走 core 的珠径阶梯价。 */
 function priceOf(id, d) {
+  const p = PRICE_OVR[id + ":" + d];
+  if (p) return p;
   if (ACC_MAP[id]) return ACC_MAP[id].price;
   return C.priceOf(id, d);
 }
@@ -1956,6 +2001,8 @@ function isAcc(id) { return !!ACC_MAP[id]; }
  * 同一颗黑曜石 8mm 有货、12mm 断货是很常见的，所以不能用材质整体开关。
  * 服务端只存有状态变更的条目，缺省上架。 */
 const OFF = new Set();
+/* 店主自定义价格：「材质:尺寸」→ 元。只存改过价的，缺省用阶梯价。 */
+const PRICE_OVR = {};
 const BEAD_SIZES = [8, 10, 12, 14];
 
 function skuOf(id, d) { return id + ":" + d; }
@@ -1974,11 +2021,17 @@ function loadCatalog() {
   return fetch("/api/catalog", { cache: "no-store" })
     .then(function (r) { return r.ok ? r.json() : null; })
     .then(function (d) {
-      if (!d || !d.off) return;
-      OFF.clear();
-      d.off.forEach(function (x) { OFF.add(x); });
+      if (!d) return;
+      if (d.off) {
+        OFF.clear();
+        d.off.forEach(function (x) { OFF.add(x); });
+      }
+      if (d.prices) {
+        Object.keys(PRICE_OVR).forEach(function (k) { delete PRICE_OVR[k]; });
+        Object.keys(d.prices).forEach(function (k) { PRICE_OVR[k] = d.prices[k]; });
+      }
     })
-    .catch(function () { /* 没后端（静态托管）时全部当上架 */ });
+    .catch(function () { /* 没后端（静态托管）时全部当上架、全用默认价 */ });
 }
 
 function tip(msg) {
@@ -2444,7 +2497,7 @@ function renderLib() {
     const nm = document.createElement('div'); nm.className = 'nm'; nm.textContent = b.name;
 
     const pr = document.createElement('div'); pr.className = 'pr';
-    pr.textContent = acc ? ('¥' + b.price + '/个') : (S.newD + 'mm ¥' + priceOf(b.id, S.newD));
+    pr.textContent = acc ? ('¥' + priceOf(b.id, b.d) + '/个') : (S.newD + 'mm ¥' + priceOf(b.id, S.newD));
 
     const add = document.createElement('div'); add.className = 'add';
     add.textContent = soldOut ? (acc ? '缺货' : d + 'mm 缺货')
@@ -2922,6 +2975,7 @@ document.addEventListener('keydown', function (e) {
 });
 
 loadCatalog().then(function () {
+  renderLib();          // 店主改过的价格要在菜单里立刻生效
   loadPreset();
 });
 
@@ -3298,10 +3352,22 @@ loadCatalog().then(function () {
                    '" data-d="' + d + '">' + d + '</button>';
           }).join("");
 
+          /* 价格框：店主改过的显示改后价，没改的显示当前生效价（灰一点）。
+             下架的 SKU 价格框禁用——反正客人也买不到。 */
+          var pzs = ss.map(function (d) {
+            var on = !isOff(b.id, d);
+            var custom = PRICE_OVR[b.id + ":" + d];
+            return '<span class="pz' + (on ? "" : " dis") + (custom ? " cus" : "") + '"><em>' + d + '</em>¥' +
+                   '<input class="pz-in" type="number" min="1" max="20000" step="1" ' +
+                   (on ? "" : "disabled ") + 'value="' + priceOf(b.id, d) +
+                   '" data-id="' + b.id + '" data-d="' + d + '"></span>';
+          }).join("");
+
           return '<div class="catrow">' +
             '<div class="ci-dot" style="' + dotStyle + '"></div>' +
             '<div class="ci-nm">' + b.name + '</div>' +
             '<div class="sizes">' + chips + '</div>' +
+            '<div class="pzs">' + pzs + '</div>' +
           '</div>';
         }).join("");
     }).join("");
@@ -3326,6 +3392,40 @@ loadCatalog().then(function () {
       })
       .catch(function (err) { toast(err.message || "操作失败"); })
       .finally(function () { btn.disabled = false; });
+  });
+
+  /* 店主改价：输入框失焦或回车时提交。留空 = 恢复默认价。 */
+  if (q("catGrid")) q("catGrid").addEventListener("change", function (e) {
+    var inp = e.target.closest(".pz-in");
+    if (!inp || inp.disabled) return;
+    var id = inp.dataset.id;
+    var d = parseInt(inp.dataset.d, 10);
+    var raw = inp.value.trim();
+    var payload = { id: id, d: d };
+    if (raw === "") {
+      payload.price = null;                       // 恢复默认
+    } else {
+      var v = Number(raw);
+      if (!isFinite(v) || v < 1 || v > 20000) {
+        toast("价格要在 1~20000 之间"); inp.value = priceOf(id, d); return;
+      }
+      payload.price = Math.round(v);
+    }
+    inp.disabled = true;
+    api("/api/catalog", { method: "POST", body: payload })
+      .then(function (r) {
+        var key = id + ":" + d;
+        if (r.price === null || r.price === undefined) delete PRICE_OVR[key];
+        else PRICE_OVR[key] = r.price;
+        renderCatGrid();
+        renderLib();                    // 客人菜单价格即时同步
+        var name = (C.MAP[id] || {}).name || id;
+        toast(name + " " + d + "mm " + (r.price == null ? "已恢复默认价" : "价格已改为 ¥" + r.price));
+      })
+      .catch(function (err) {
+        toast(err.message || "改价失败");
+        inp.disabled = false; inp.value = priceOf(id, d);
+      });
   });
 
   /* 页签切换 */
@@ -3464,21 +3564,31 @@ loadCatalog().then(function () {
     if (o.name) rows.push(["客人", esc(o.name)]);
     if (o.note) rows.push(["备注", esc(o.note)]);
 
-    var bySize = {};
+    /* 备货清单：按「材质 × 尺寸」聚合，每种一行大图 + 数量。
+       店主照单抓珠就行，不用在一堆小圆点里数。 */
+    var pk = {};
     (o.seq || []).forEach(function (b) {
-      var k = beadName(b.id) + " " + b.d + "mm";
-      bySize[k] = (bySize[k] || 0) + 1;
+      var key = b.id + ":" + b.d;
+      if (!pk[key]) pk[key] = { id: b.id, d: b.d, n: 0 };
+      pk[key].n++;
     });
-    var desc = Object.keys(bySize).map(function (k) { return k + " ×" + bySize[k]; }).join("、");
+    var pkRows = Object.keys(pk).map(function (k) { return pk[k]; })
+      .sort(function (a, b) { return b.n - a.n || a.id.localeCompare(b.id); });
+    var pkHtml = pkRows.map(function (r) {
+      return '<div class="pk-row">' +
+        '<i class="pk-dot" style="' + beadStyle(r.id) + '"></i>' +
+        '<span class="pk-nm">' + esc(beadName(r.id)) +
+          '<em>' + r.d + 'mm</em></span>' +
+        '<span class="pk-num">×' + r.n + '</span>' +
+      '</div>';
+    }).join("");
 
     q("dtBody").innerHTML =
       rows.map(function (r) {
         return '<div class="line"><span>' + r[0] + '</span><b>' + r[1] + '</b></div>';
       }).join("") +
-      '<div class="beads">' +
-        (o.seq || []).map(function (b) { return '<i class="bd" style="' + beadStyle(b.id) + '"></i>'; }).join("") +
-      '</div>' +
-      '<div style="font-size:10px;color:#B79C8B;margin-top:9px;line-height:1.6">' + desc + '</div>';
+      '<div class="pk-title">备货清单 · ' + pkRows.length + ' 种 ' + (o.seq || []).length + ' 颗</div>' +
+      '<div class="pk-list">' + pkHtml + '</div>';
 
     q("modalDetail").hidden = false;
   }

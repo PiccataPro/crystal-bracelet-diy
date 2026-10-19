@@ -52,7 +52,8 @@ MIME = {
 
 # 与前端 bracelet-core.js 的 BEADS 白名单保持一致
 BEAD_IDS = {"w", "pk", "ro", "am", "te", "ye", "ls", "nv", "gr", "rd", "bk", "pe",
-            "s7", "mo", "aq", "lb", "pr", "ga"}
+            "s7", "mo", "aq", "lb", "pr", "ga",
+            "ru", "sn", "ht", "su", "tt", "bx"}
 ACC_IDS = {"ag", "as", "ad", "ap", "af", "ab"}
 ALL_IDS = BEAD_IDS | ACC_IDS
 BEAD_SIZES = (8, 10, 12, 14)
@@ -142,6 +143,12 @@ def init_db():
                         enabled INTEGER NOT NULL,
                         updated_at INTEGER NOT NULL
                     )""")
+        # 店主自定义价格（SKU 级）：只存改过价的条目，缺省用前端阶梯价
+        c.execute("""CREATE TABLE IF NOT EXISTS catalog_price (
+                        sku TEXT PRIMARY KEY,
+                        price INTEGER NOT NULL,
+                        updated_at INTEGER NOT NULL
+                    )""")
 
 
 def make_token(user):
@@ -190,10 +197,15 @@ def validate_order(d):
         if not isinstance(b, dict):
             return None, "珠子数据格式不对"
         bid, bd = b.get("id"), b.get("d")
-        if bid not in BEAD_IDS:
+        if bid in ACC_IDS:
+            # 配件按「个」计，厚度固定（如金隔珠 6），不走珠径档位
+            if bd != ACC_SIZE.get(bid):
+                return None, "配件厚度不对：%s" % bid
+        elif bid in BEAD_IDS:
+            if bd not in SIZES:
+                return None, "珠径不在可选档位：%s" % bd
+        else:
             return None, "未知珠材：%s" % bid
-        if bd not in SIZES:
-            return None, "珠径不在可选档位：%s" % bd
         clean_seq.append({"id": bid, "d": bd})
 
     def num(k, lo, hi, default=None):
@@ -331,12 +343,14 @@ class Handler(BaseHTTPRequestHandler):
             return self._send(200, {"ok": True, "service": "bracelet-order"})
 
         if path == "/api/catalog":
-            # 公开：客人端要据此过滤菜单，外泄的只是「哪些没货」，无所谓
+            # 公开：客人端要据此过滤菜单、按店主价计价，外泄的只是「哪些没货 + 卖多少钱」
             try:
                 with db() as c:
                     off = [r[0] for r in c.execute(
                         "SELECT sku FROM catalog_sku WHERE enabled=0").fetchall()]
-                return self._send(200, {"ok": True, "off": off})
+                    prices = {r[0]: r[1] for r in c.execute(
+                        "SELECT sku, price FROM catalog_price").fetchall()}
+                return self._send(200, {"ok": True, "off": off, "prices": prices})
             except Exception as e:
                 import traceback
                 traceback.print_exc()
@@ -426,13 +440,43 @@ class Handler(BaseHTTPRequestHandler):
                 return self._err(400, "珠径只能是 8/10/12/14")
 
             key = "%s:%d" % (bid, size)
-            enabled = 1 if d.get("enabled") else 0
-            with db() as c:
-                c.execute("INSERT INTO catalog_sku(sku, enabled, updated_at) VALUES(?,?,?) "
-                          "ON CONFLICT(sku) DO UPDATE SET enabled=excluded.enabled, "
-                          "updated_at=excluded.updated_at",
-                          (key, enabled, int(time.time() * 1000)))
-            return self._send(200, {"ok": True, "sku": key, "enabled": bool(enabled)})
+            now = int(time.time() * 1000)
+            resp = {"ok": True, "sku": key}
+
+            # 上下架：只有显式带了 enabled 才动，否则改价时会被误置为下架
+            if "enabled" in d:
+                enabled = 1 if d.get("enabled") else 0
+                with db() as c:
+                    c.execute("INSERT INTO catalog_sku(sku, enabled, updated_at) VALUES(?,?,?) "
+                              "ON CONFLICT(sku) DO UPDATE SET enabled=excluded.enabled, "
+                              "updated_at=excluded.updated_at",
+                              (key, enabled, now))
+                resp["enabled"] = bool(enabled)
+
+            # 改价：带 price 才动。price=null 表示恢复默认（删掉覆盖条目）
+            if "price" in d:
+                pv = d.get("price")
+                if pv is None or pv == "":
+                    with db() as c:
+                        c.execute("DELETE FROM catalog_price WHERE sku=?", (key,))
+                    resp["price"] = None
+                else:
+                    try:
+                        price = int(round(float(pv)))
+                    except (TypeError, ValueError):
+                        return self._err(400, "价格得是数字")
+                    if not (1 <= price <= 20000):
+                        return self._err(400, "价格要在 1~20000 元之间")
+                    with db() as c:
+                        c.execute("INSERT INTO catalog_price(sku, price, updated_at) "
+                                  "VALUES(?,?,?) ON CONFLICT(sku) "
+                                  "DO UPDATE SET price=excluded.price, updated_at=excluded.updated_at",
+                                  (key, price, now))
+                    resp["price"] = price
+
+            if "enabled" not in d and "price" not in d:
+                return self._err(400, "没有要修改的内容")
+            return self._send(200, resp)
 
         if path == "/api/my-orders":
             # 顾客按手机号查自己的订单。手机号即凭证——小店场景够用，
