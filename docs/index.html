@@ -2138,15 +2138,51 @@ function shade(hex, p) {
 
 /* =====================================================================
  * 配件形态：串在绳上的配件是「孔道沿绳方向」的圆柱/圆片/杯，
- * 不是球。画布上画侧视图：线从孔里穿过，面沿半径方向撑开。
+ * 不是球。优先用 PC53 渲染的「绳上配件」真实贴图（与珠材库同一纪律），
+ * 图没加载好时回退矢量侧视图。
  * ===================================================================== */
 const ACC_SHAPE = { ag: 'round', as: 'round', ad: 'disc', ap: 'disc', af: 'cup', ab: 'barrel' };
 
-/** 配件沿半径方向的半面径（沿绳半长固定为 r，布局占位不变） */
-function accRy(id, r) {
-  const s = ACC_SHAPE[id] || 'round';
-  return s === 'disc' ? r * 2.0 : s === 'cup' ? r * 1.3 : s === 'round' ? r * 1.15 : r;
+/* 绳上配件真实渲染图（横向：绳水平穿孔）。与 BEAD_IMG 同一套预加载纪律 */
+const ACC_IMG = {
+  ag: 'assets/beads/acc_ag.webp',
+  as: 'assets/beads/acc_as.webp',
+  ad: 'assets/beads/acc_ad.webp',
+  ap: 'assets/beads/acc_ap.webp',
+  af: 'assets/beads/acc_af.webp',
+  ab: 'assets/beads/acc_ab.webp'
+};
+const _accImgCache = {};
+function accImage(id) {
+  const src = ACC_IMG[id];
+  if (!src) return null;
+  const im = _accImgCache[id];
+  return (im && im.complete && im.naturalWidth) ? im : null;
 }
+Object.keys(ACC_IMG).forEach(function (k) {
+  const im = new Image();
+  im.onload = function () { try { draw(); } catch (_) {} };
+  im.src = ACC_IMG[k];
+  _accImgCache[k] = im;
+});
+
+/** 配件贴图尺寸：贴图里绳是水平的，所以
+ *    图高 → 径向（配件面径，≈相邻珠子直径，故固定为 r）
+ *    图宽 → 沿绳方向（隔片薄、桶珠长，按图比例，夹上限防盖邻珠）。
+ *  返回 {rx: 沿绳半长, ry: 径向半高}。无贴图时回退矢量示意用的比例。 */
+function accSize(id, r) {
+  const im = accImage(id);
+  if (im && im.naturalHeight) {
+    const ry = r * 0.95;
+    const rx = Math.min(ry * (im.naturalWidth / im.naturalHeight), r * 1.25);
+    return { rx: rx, ry: ry };
+  }
+  const s = ACC_SHAPE[id] || 'round';
+  const ry = s === 'disc' ? r * 2.0 : s === 'cup' ? r * 1.3 : s === 'round' ? r * 1.15 : r;
+  return { rx: r, ry: ry };
+}
+/** 兼容旧调用：径向半高（选中圈、删除气泡让位用） */
+function accRy(id, r) { return accSize(id, r).ry; }
 
 function roundRectPath(ctx, x, y, w, h, rad) {
   ctx.beginPath();
@@ -2296,8 +2332,19 @@ function draw(override) {
 
     const bimg = beadImage(it.b.id);
     if (isAcc(it.b.id)) {
-      /* 配件：按真实形态画侧视（圆柱/圆片/花托），孔道沿绳方向，线穿孔而过 */
-      drawAccessory(ctx, it.b.id, x, y, r, it.a + Math.PI / 2);
+      /* 配件：优先画 PC53 渲染的绳上真实贴图（横向、绳水平），
+         旋转到切线方向；径向半高按 accRy 与相邻珠子比例一致 */
+      const aimg = accImage(it.b.id);
+      if (aimg) {
+        const sz = accSize(it.b.id, r);
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(it.a + Math.PI / 2);
+        ctx.drawImage(aimg, -sz.rx, -sz.ry, sz.rx * 2, sz.ry * 2);
+        ctx.restore();
+      } else {
+        drawAccessory(ctx, it.b.id, x, y, r, it.a + Math.PI / 2);
+      }
     } else if (bimg) {
       /* 同一张图反复用，朝向一致会看出「贴图复制」；
          按位置给确定性旋转 + 隔颗镜像，拖拽重绘时不会乱跳 */
@@ -2345,7 +2392,7 @@ function draw(override) {
       ctx.save();
       ctx.translate(x, y); ctx.rotate(it.a + Math.PI / 2);
       ctx.beginPath();
-      if (isAcc(it.b.id)) ctx.ellipse(0, 0, r + 2.5, accRy(it.b.id, r) + 2.5, 0, 0, Math.PI * 2);
+      if (isAcc(it.b.id)) { var _sz = accSize(it.b.id, r); ctx.ellipse(0, 0, _sz.rx + 2.5, _sz.ry + 2.5, 0, 0, Math.PI * 2); }
       else ctx.arc(0, 0, r + 2.5, 0, Math.PI * 2);
       ctx.restore();
       ctx.strokeStyle = '#2F6B5C'; ctx.lineWidth = 2.5; ctx.stroke();
