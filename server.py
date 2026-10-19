@@ -206,7 +206,10 @@ def validate_order(d):
                 return None, "珠径不在可选档位：%s" % bd
         else:
             return None, "未知珠材：%s" % bid
-        clean_seq.append({"id": bid, "d": bd})
+        item = {"id": bid, "d": bd}
+        if b.get("fl"):
+            item["fl"] = 1  # 花托大口朝向（1=镜像），其余配件无此字段
+        clean_seq.append(item)
 
     def num(k, lo, hi, default=None):
         v = d.get(k, default)
