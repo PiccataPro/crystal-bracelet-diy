@@ -14,7 +14,7 @@ A zero-dependency WeChat Mini Program demo: drag beads onto a bracelet ring, get
 
 | 版本 | 地址 | 能做什么 |
 |---|---|---|
-| 正式版（带订单后端） | https://bracelet.piccata.online:41888/ | 配珠 + 推送订单 + 店主后台。域名未备案，**必须带端口 `:41888`** |
+| 正式版（带订单后端） | https://bracelet.piccata.online/ | 配珠 + 推送订单 + 店主后台 |
 | 静态演示（GitHub Pages） | https://piccatapro.github.io/crystal-bracelet-diy/ | 只能配珠，下单需要后端 |
 
 **它不是小程序本体**：WXML/WXSS 只有微信运行时能渲染。网页版是同一套 `bracelet-core.js` 的浏览器实现，

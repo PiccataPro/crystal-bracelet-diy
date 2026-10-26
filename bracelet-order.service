@@ -1,6 +1,6 @@
 [Unit]
 Description=Bracelet Order API (水晶手串订单服务)
-Documentation=https://bracelet.piccata.online:41888/
+Documentation=https://bracelet.piccata.online/
 After=network.target
 Wants=network-online.target
 
